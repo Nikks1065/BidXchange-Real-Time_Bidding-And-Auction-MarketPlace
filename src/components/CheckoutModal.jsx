@@ -1,17 +1,9 @@
 import React, { useState } from 'react';
 import { X, CreditCard, ShieldCheck, CheckCircle2, Lock, Truck, ArrowRight } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { Auction } from '../types/index.ts';
-import { api } from '../services/api.ts';
+import { api } from '../services/api.js';
 
-interface CheckoutModalProps {
-  auction: Auction;
-  isOpen: boolean;
-  onClose: () => void;
-  onPaymentComplete: () => void;
-}
-
-export const CheckoutModal: React.FC<CheckoutModalProps> = ({
+export const CheckoutModal = ({
   auction,
   isOpen,
   onClose,
@@ -22,11 +14,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [cardExpiry, setCardExpiry] = useState('12/28');
   const [cardCvc, setCardCvc] = useState('884');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [receipt, setReceipt] = useState<any | null>(null);
+  const [receipt, setReceipt] = useState(null);
 
   if (!isOpen) return null;
 
-  const handlePay = async (e: React.FormEvent) => {
+  const handlePay = async (e) => {
     e.preventDefault();
     setIsProcessing(true);
 
@@ -38,7 +30,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       });
 
       setReceipt(res.order);
-      // Trigger victorious confetti
       confetti({
         particleCount: 100,
         spread: 70,
@@ -46,7 +37,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       });
 
       onPaymentComplete();
-    } catch (err: any) {
+    } catch (err) {
       alert(err.message || 'Payment simulation failed');
     } finally {
       setIsProcessing(false);
@@ -75,7 +66,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
             </div>
 
-            {/* Auction Summary */}
             <div className="mt-5 p-4 rounded-2xl bg-slate-950 border border-slate-800 flex items-center gap-4">
               <img
                 src={auction.images?.[0]?.url || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200'}
@@ -94,7 +84,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </div>
 
             <form onSubmit={handlePay} className="mt-6 space-y-4">
-              {/* Shipping Address */}
               <div>
                 <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-2">
                   <Truck className="w-3.5 h-3.5 text-amber-400" />
@@ -109,7 +98,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 />
               </div>
 
-              {/* Payment details */}
               <div>
                 <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-2">
                   <CreditCard className="w-3.5 h-3.5 text-amber-400" />

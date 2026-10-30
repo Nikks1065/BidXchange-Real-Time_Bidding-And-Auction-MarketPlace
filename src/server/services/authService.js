@@ -1,20 +1,13 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { db, User, Role } from '../db/database.ts';
+import { db } from '../db/database.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'bidxchange-jwt-production-secret-key-2026';
 const TOKEN_EXPIRY = '7d';
 
-export interface TokenPayload {
-  userId: string;
-  email: string;
-  role: Role;
-  roles: Role[];
-}
-
 export class AuthService {
-  public static signToken(user: User): string {
-    const payload: TokenPayload = {
+  static signToken(user) {
+    const payload = {
       userId: user.id,
       email: user.email,
       role: user.role,
@@ -23,21 +16,16 @@ export class AuthService {
     return jwt.sign(payload, JWT_SECRET, { expiresIn: TOKEN_EXPIRY });
   }
 
-  public static verifyToken(token: string): TokenPayload | null {
+  static verifyToken(token) {
     try {
-      return jwt.verify(token, JWT_SECRET) as TokenPayload;
+      return jwt.verify(token, JWT_SECRET);
     } catch {
       return null;
     }
   }
 
-  public static async register(data: {
-    email: string;
-    password: string;
-    name: string;
-    role?: Role;
-  }): Promise<{ user: Omit<User, 'passwordHash'>; token: string }> {
-    const emailNorm = data.email.trim().toLowerCase();
+  static async register(data) {
+    const emailNorm = data.email ? data.email.trim().toLowerCase() : '';
     if (!emailNorm || !data.password || !data.name) {
       throw new Error('All fields (name, email, password) are required');
     }
@@ -53,17 +41,17 @@ export class AuthService {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(data.password, salt);
 
-    const initialRole: Role = data.role === 'SELLER' ? 'SELLER' : 'BUYER';
-    const roles: Role[] = initialRole === 'SELLER' ? ['BUYER', 'SELLER'] : ['BUYER'];
+    const initialRole = data.role === 'SELLER' ? 'SELLER' : 'BUYER';
+    const roles = initialRole === 'SELLER' ? ['BUYER', 'SELLER'] : ['BUYER'];
 
-    const newUser: User = {
+    const newUser = {
       id: `usr-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       email: emailNorm,
       passwordHash,
       name: data.name.trim(),
       role: initialRole,
       roles,
-      walletBalance: 10000, // Starting simulated bidding budget
+      walletBalance: 10000,
       isSuspended: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -86,11 +74,8 @@ export class AuthService {
     return { user: safeUser, token };
   }
 
-  public static async login(credentials: {
-    email: string;
-    password: string;
-  }): Promise<{ user: Omit<User, 'passwordHash'>; token: string }> {
-    const emailNorm = credentials.email.trim().toLowerCase();
+  static async login(credentials) {
+    const emailNorm = credentials.email ? credentials.email.trim().toLowerCase() : '';
     const user = db.getUserByEmail(emailNorm);
 
     if (!user) {
@@ -120,13 +105,12 @@ export class AuthService {
     return { user: safeUser, token };
   }
 
-  public static toggleSellerRole(userId: string): Omit<User, 'passwordHash'> {
+  static toggleSellerRole(userId) {
     const user = db.getUserById(userId);
     if (!user) throw new Error('User not found');
 
     const hasSeller = user.roles.includes('SELLER');
     if (hasSeller) {
-      // Toggle primary role if needed
       user.role = 'BUYER';
       user.roles = user.roles.filter((r) => r !== 'SELLER');
     } else {

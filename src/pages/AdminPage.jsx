@@ -1,27 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import {
   Shield,
-  Users,
-  Flame,
-  DollarSign,
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-  UserX,
-  UserCheck,
-  FileText,
-  Activity,
 } from 'lucide-react';
-import { User, AuditLog } from '../types/index.ts';
-import { api } from '../services/api.ts';
-import { useAuth } from '../context/AuthContext.tsx';
+import { api } from '../services/api.js';
+import { useAuth } from '../context/AuthContext.jsx';
 
-export const AdminPage: React.FC = () => {
+export const AdminPage = () => {
   const { user } = useAuth();
-  const [metrics, setMetrics] = useState<any>(null);
-  const [usersList, setUsersList] = useState<User[]>([]);
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
-  const [activeTab, setActiveTab] = useState<'users' | 'logs'>('users');
+  const [metrics, setMetrics] = useState(null);
+  const [usersList, setUsersList] = useState([]);
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [activeTab, setActiveTab] = useState('users');
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchAdminData = async () => {
@@ -36,7 +25,7 @@ export const AdminPage: React.FC = () => {
       setMetrics(metRes);
       setUsersList(usersRes.users);
       setAuditLogs(logsRes.logs);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to load admin data', err);
     } finally {
       setIsLoading(false);
@@ -47,11 +36,11 @@ export const AdminPage: React.FC = () => {
     fetchAdminData();
   }, [user]);
 
-  const handleToggleSuspend = async (targetUserId: string) => {
+  const handleToggleSuspend = async (targetUserId) => {
     try {
       await api.admin.toggleSuspend(targetUserId);
       fetchAdminData();
-    } catch (err: any) {
+    } catch (err) {
       alert(err.message || 'Failed to toggle user suspension');
     }
   };
@@ -72,7 +61,6 @@ export const AdminPage: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8">
-      {/* Header */}
       <div>
         <span className="text-xs font-bold uppercase tracking-wider text-purple-400">
           Platform Governance
@@ -85,7 +73,6 @@ export const AdminPage: React.FC = () => {
         </p>
       </div>
 
-      {/* Metric Cards */}
       {metrics && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800">
@@ -126,7 +113,6 @@ export const AdminPage: React.FC = () => {
         </div>
       )}
 
-      {/* Tabs */}
       <div className="flex gap-2 border-b border-slate-800 pb-2">
         <button
           onClick={() => setActiveTab('users')}
@@ -146,7 +132,6 @@ export const AdminPage: React.FC = () => {
         </button>
       </div>
 
-      {/* 1. USERS LIST */}
       {activeTab === 'users' && (
         <div className="rounded-3xl bg-slate-900 border border-slate-800 overflow-hidden divide-y divide-slate-800">
           {usersList.map((u) => (
@@ -171,7 +156,7 @@ export const AdminPage: React.FC = () => {
                   </div>
                   <div className="text-xs text-slate-400 mt-0.5">{u.email}</div>
                   <div className="text-[11px] text-slate-500 mt-1">
-                    Balance: ${u.walletBalance.toLocaleString()} • Roles: {u.roles.join(', ')}
+                    Balance: ${u.walletBalance.toLocaleString()} • Roles: {u.roles?.join(', ')}
                   </div>
                 </div>
               </div>
@@ -193,7 +178,6 @@ export const AdminPage: React.FC = () => {
         </div>
       )}
 
-      {/* 2. AUDIT LOGS */}
       {activeTab === 'logs' && (
         <div className="rounded-3xl bg-slate-900 border border-slate-800 overflow-hidden divide-y divide-slate-800/60 max-h-[500px] overflow-y-auto font-mono text-xs">
           {auditLogs.map((log) => (

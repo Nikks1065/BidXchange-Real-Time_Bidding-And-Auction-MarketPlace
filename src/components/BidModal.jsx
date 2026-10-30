@@ -1,36 +1,28 @@
 import React, { useState } from 'react';
 import { X, Gavel, AlertCircle, CheckCircle, ShieldCheck, Flame } from 'lucide-react';
-import { Auction } from '../types/index.ts';
-import { api } from '../services/api.ts';
-import { useAuth } from '../context/AuthContext.tsx';
+import { api } from '../services/api.js';
+import { useAuth } from '../context/AuthContext.jsx';
 
-interface BidModalProps {
-  auction: Auction;
-  isOpen: boolean;
-  onClose: () => void;
-  onBidPlaced: (updatedAuction: Auction) => void;
-}
-
-export const BidModal: React.FC<BidModalProps> = ({ auction, isOpen, onClose, onBidPlaced }) => {
+export const BidModal = ({ auction, isOpen, onClose, onBidPlaced }) => {
   const { user } = useAuth();
   const minRequired =
     auction.bidCount === 0
       ? auction.startingPrice
       : auction.currentHighestBid + auction.minIncrement;
 
-  const [bidAmount, setBidAmount] = useState<number>(minRequired);
+  const [bidAmount, setBidAmount] = useState(minRequired);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
 
   if (!isOpen) return null;
 
-  const handleIncrement = (amount: number) => {
+  const handleIncrement = (amount) => {
     setBidAmount((prev) => Math.max(minRequired, prev + amount));
     setError(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) {
       setError('Please sign in or choose a demo persona to submit a live bid.');
@@ -46,7 +38,6 @@ export const BidModal: React.FC<BidModalProps> = ({ auction, isOpen, onClose, on
     setError(null);
     setSuccessMessage(null);
 
-    // Generate idempotency key for this submission
     const idempotencyKey = `bid-${auction.id}-${user.id}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
 
     try {
@@ -57,7 +48,7 @@ export const BidModal: React.FC<BidModalProps> = ({ auction, isOpen, onClose, on
         onClose();
         setSuccessMessage(null);
       }, 1500);
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message || 'Failed to submit bid');
     } finally {
       setIsSubmitting(false);
@@ -74,7 +65,6 @@ export const BidModal: React.FC<BidModalProps> = ({ auction, isOpen, onClose, on
           <X className="w-5 h-5" />
         </button>
 
-        {/* Modal Header */}
         <div className="flex items-center gap-3">
           <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
             <Gavel className="w-6 h-6" />
@@ -85,7 +75,6 @@ export const BidModal: React.FC<BidModalProps> = ({ auction, isOpen, onClose, on
           </div>
         </div>
 
-        {/* Auction Price Stat bar */}
         <div className="mt-6 p-4 rounded-2xl bg-slate-950/70 border border-slate-800 grid grid-cols-2 gap-4">
           <div>
             <span className="text-xs text-slate-400">Current Highest Bid</span>
@@ -101,7 +90,6 @@ export const BidModal: React.FC<BidModalProps> = ({ auction, isOpen, onClose, on
           </div>
         </div>
 
-        {/* Success or Error Banners */}
         {error && (
           <div className="mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
@@ -117,7 +105,6 @@ export const BidModal: React.FC<BidModalProps> = ({ auction, isOpen, onClose, on
         )}
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-          {/* Preset Buttons */}
           <div>
             <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-2">
               Quick Increment Shortcuts
@@ -136,7 +123,6 @@ export const BidModal: React.FC<BidModalProps> = ({ auction, isOpen, onClose, on
             </div>
           </div>
 
-          {/* Custom Input */}
           <div>
             <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-2">
               Your Maximum Bid (USD)
@@ -160,7 +146,6 @@ export const BidModal: React.FC<BidModalProps> = ({ auction, isOpen, onClose, on
             </div>
           </div>
 
-          {/* Anti-Sniping & Concurrency Notice */}
           <div className="p-3 rounded-xl bg-slate-950 border border-slate-800/80 flex items-start gap-2.5 text-[11px] text-slate-400">
             <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
             <span>
@@ -168,7 +153,6 @@ export const BidModal: React.FC<BidModalProps> = ({ auction, isOpen, onClose, on
             </span>
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={isSubmitting || !!successMessage}

@@ -7,30 +7,21 @@ import {
   TrendingUp,
   Clock,
   Sparkles,
-  Award,
-  Layers,
   ChevronRight,
 } from 'lucide-react';
-import { Auction, Category } from '../types/index.ts';
-import { api } from '../services/api.ts';
-import { AuctionCard } from '../components/AuctionCard.tsx';
-import { CountdownTimer } from '../components/CountdownTimer.tsx';
+import { api } from '../services/api.js';
+import { AuctionCard } from '../components/AuctionCard.jsx';
+import { CountdownTimer } from '../components/CountdownTimer.jsx';
 
-interface HomePageProps {
-  onNavigate: (tab: string, auctionId?: string) => void;
-  onOpenBidModal: (auction: Auction) => void;
-  onOpenAuth: () => void;
-}
-
-export const HomePage: React.FC<HomePageProps> = ({
+export const HomePage = ({
   onNavigate,
   onOpenBidModal,
   onOpenAuth,
 }) => {
-  const [featuredAuction, setFeaturedAuction] = useState<Auction | null>(null);
-  const [liveAuctions, setLiveAuctions] = useState<Auction[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [endingSoonAuctions, setEndingSoonAuctions] = useState<Auction[]>([]);
+  const [featuredAuction, setFeaturedAuction] = useState(null);
+  const [liveAuctions, setLiveAuctions] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [endingSoonAuctions, setEndingSoonAuctions] = useState([]);
   const [stats, setStats] = useState({
     activeAuctions: 0,
     totalBids: 0,
@@ -49,21 +40,17 @@ export const HomePage: React.FC<HomePageProps> = ({
         const all = aucRes.auctions;
         setCategories(catRes.categories);
 
-        // Filter live auctions
         const live = all.filter((a) => a.status === 'LIVE');
         setLiveAuctions(live.slice(0, 6));
 
-        // Featured auction: Daytona or first live item
         const featured = live.find((a) => a.id === 'auc-rolex-daytona') || live[0];
         setFeaturedAuction(featured || null);
 
-        // Ending soon auctions
         const endingSoon = [...live].sort(
           (a, b) => new Date(a.endTime).getTime() - new Date(b.endTime).getTime()
         );
         setEndingSoonAuctions(endingSoon.slice(0, 4));
 
-        // Calculate actual platform statistics
         const totalBids = all.reduce((sum, a) => sum + a.bidCount, 0);
         const grossVolume = all.reduce((sum, a) => sum + a.currentHighestBid, 0);
         setStats({
@@ -84,13 +71,11 @@ export const HomePage: React.FC<HomePageProps> = ({
     <div className="flex flex-col gap-16 md:gap-24 pb-20">
       {/* 1. HERO SECTION */}
       <section className="relative overflow-hidden pt-8 md:pt-14 pb-16 px-4 sm:px-6 lg:px-8 border-b border-slate-800/80 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
-        {/* Glow ambient background effects */}
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-amber-500/10 blur-[140px] pointer-events-none rounded-full" />
         <div className="absolute top-1/3 right-10 w-[400px] h-[300px] bg-orange-600/10 blur-[130px] pointer-events-none rounded-full" />
 
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-            {/* Left Headline */}
             <div className="lg:col-span-7 space-y-6">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider">
                 <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
@@ -110,7 +95,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                 Experience high-velocity live auctions with sub-second bid broadcasts, concurrency-safe transactional bidding, and automated anti-sniping protection.
               </p>
 
-              {/* Action Buttons */}
               <div className="pt-2 flex flex-wrap items-center gap-4">
                 <button
                   onClick={() => onNavigate('explore')}
@@ -131,7 +115,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                 )}
               </div>
 
-              {/* Real-time Platform KPIs */}
               <div className="pt-8 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div>
                   <div className="text-2xl font-black text-white font-mono">
@@ -168,7 +151,6 @@ export const HomePage: React.FC<HomePageProps> = ({
               </div>
             </div>
 
-            {/* Right: Featured Live Auction Spotlight Card */}
             {featuredAuction && (
               <div className="lg:col-span-5">
                 <div

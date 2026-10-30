@@ -1,25 +1,20 @@
 import React, { useState } from 'react';
-import { X, Lock, Mail, User as UserIcon, Sparkles, AlertCircle } from 'lucide-react';
-import { useAuth } from '../context/AuthContext.tsx';
+import { X, Lock, Mail, User as UserIcon, AlertCircle } from 'lucide-react';
+import { useAuth } from '../context/AuthContext.jsx';
 
-interface AuthModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
+export const AuthModal = ({ isOpen, onClose }) => {
   const { login, register } = useAuth();
-  const [tab, setTab] = useState<'login' | 'register'>('login');
+  const [tab, setTab] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [role, setRole] = useState<'BUYER' | 'SELLER'>('BUYER');
-  const [error, setError] = useState<string | null>(null);
+  const [role, setRole] = useState('BUYER');
+  const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
@@ -31,14 +26,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         await register({ email, password, name, role });
       }
       onClose();
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message || 'Authentication failed');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleFillDemo = (demoEmail: string) => {
+  const handleFillDemo = (demoEmail) => {
     setEmail(demoEmail);
     setPassword('Password123!');
     setError(null);
@@ -54,7 +49,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           <X className="w-5 h-5" />
         </button>
 
-        {/* Header */}
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold text-white">
             {tab === 'login' ? 'Welcome Back' : 'Create an Account'}
@@ -66,7 +60,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           </p>
         </div>
 
-        {/* Tab switcher */}
         <div className="grid grid-cols-2 p-1 rounded-2xl bg-slate-950 border border-slate-800 mb-6">
           <button
             onClick={() => {
@@ -160,7 +153,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               </label>
               <select
                 value={role}
-                onChange={(e) => setRole(e.target.value as any)}
+                onChange={(e) => setRole(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-xl px-4 py-3 text-sm text-white outline-none"
               >
                 <option value="BUYER">Bid on items (Buyer)</option>
@@ -178,7 +171,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           </button>
         </form>
 
-        {/* Quick demo autofill buttons */}
         <div className="mt-6 pt-5 border-t border-slate-800 text-center">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 block mb-2.5">
             Quick 1-Click Demo Fill:

@@ -2,32 +2,23 @@ import React, { useState, useEffect } from 'react';
 import {
   Gavel,
   Trophy,
-  Heart,
   CreditCard,
   CheckCircle,
   AlertTriangle,
-  Clock,
   ArrowRight,
-  TrendingDown,
-  Layers,
 } from 'lucide-react';
-import { Auction } from '../types/index.ts';
-import { api } from '../services/api.ts';
-import { useAuth } from '../context/AuthContext.tsx';
-import { CheckoutModal } from '../components/CheckoutModal.tsx';
+import { api } from '../services/api.js';
+import { useAuth } from '../context/AuthContext.jsx';
+import { CheckoutModal } from '../components/CheckoutModal.jsx';
 
-interface BuyerDashboardPageProps {
-  onNavigate: (tab: string, auctionId?: string) => void;
-}
-
-export const BuyerDashboardPage: React.FC<BuyerDashboardPageProps> = ({ onNavigate }) => {
+export const BuyerDashboardPage = ({ onNavigate }) => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'bids' | 'won' | 'watchlist' | 'lost'>('bids');
-  const [activeBids, setActiveBids] = useState<any[]>([]);
-  const [wonAuctions, setWonAuctions] = useState<any[]>([]);
-  const [lostAuctions, setLostAuctions] = useState<any[]>([]);
-  const [watchlist, setWatchlist] = useState<Auction[]>([]);
-  const [selectedWonAuction, setSelectedWonAuction] = useState<Auction | null>(null);
+  const [activeTab, setActiveTab] = useState('bids');
+  const [activeBids, setActiveBids] = useState([]);
+  const [wonAuctions, setWonAuctions] = useState([]);
+  const [lostAuctions, setLostAuctions] = useState([]);
+  const [watchlist, setWatchlist] = useState([]);
+  const [selectedWonAuction, setSelectedWonAuction] = useState(null);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
   const fetchDashboardData = async () => {
@@ -48,7 +39,6 @@ export const BuyerDashboardPage: React.FC<BuyerDashboardPageProps> = ({ onNaviga
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8">
-      {/* Header with Buyer Profile Snippet */}
       <div className="p-6 sm:p-8 rounded-3xl bg-slate-900 border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         <div className="flex items-center gap-4">
           <img
@@ -79,7 +69,6 @@ export const BuyerDashboardPage: React.FC<BuyerDashboardPageProps> = ({ onNaviga
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-2 border-b border-slate-800 pb-2 overflow-x-auto">
         <button
           onClick={() => setActiveTab('bids')}
@@ -123,7 +112,6 @@ export const BuyerDashboardPage: React.FC<BuyerDashboardPageProps> = ({ onNaviga
         </button>
       </div>
 
-      {/* 1. ACTIVE BIDS */}
       {activeTab === 'bids' && (
         <div className="space-y-4">
           {activeBids.length === 0 ? (
@@ -185,7 +173,6 @@ export const BuyerDashboardPage: React.FC<BuyerDashboardPageProps> = ({ onNaviga
         </div>
       )}
 
-      {/* 2. WON AUCTIONS */}
       {activeTab === 'won' && (
         <div className="space-y-4">
           {wonAuctions.length === 0 ? (
@@ -240,7 +227,6 @@ export const BuyerDashboardPage: React.FC<BuyerDashboardPageProps> = ({ onNaviga
         </div>
       )}
 
-      {/* 3. WATCHLIST */}
       {activeTab === 'watchlist' && (
         <div className="space-y-4">
           {watchlist.length === 0 ? (
@@ -278,7 +264,6 @@ export const BuyerDashboardPage: React.FC<BuyerDashboardPageProps> = ({ onNaviga
         </div>
       )}
 
-      {/* 4. LOST / OUTBID AUCTIONS */}
       {activeTab === 'lost' && (
         <div className="space-y-4">
           {lostAuctions.length === 0 ? (
@@ -303,7 +288,6 @@ export const BuyerDashboardPage: React.FC<BuyerDashboardPageProps> = ({ onNaviga
         </div>
       )}
 
-      {/* Checkout Modal */}
       {selectedWonAuction && isCheckoutOpen && (
         <CheckoutModal
           auction={selectedWonAuction}

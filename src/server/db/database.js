@@ -1,164 +1,31 @@
 import bcrypt from 'bcryptjs';
 
-export type Role = 'BUYER' | 'SELLER' | 'ADMIN';
-export type AuctionStatus = 'DRAFT' | 'SCHEDULED' | 'LIVE' | 'ENDED' | 'PAYMENT_PENDING' | 'COMPLETED' | 'CANCELLED';
-export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED';
-export type OrderStatus = 'PENDING' | 'PAID' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
-
-export interface User {
-  id: string;
-  email: string;
-  passwordHash: string;
-  name: string;
-  role: Role;
-  roles: Role[];
-  avatarUrl?: string;
-  bio?: string;
-  phone?: string;
-  walletBalance: number;
-  isSuspended: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string;
-  icon?: string;
-  imageUrl?: string;
-  createdAt: string;
-}
-
-export interface AuctionImage {
-  id: string;
-  auctionId: string;
-  url: string;
-  isPrimary: boolean;
-  caption?: string;
-}
-
-export interface Bid {
-  id: string;
-  auctionId: string;
-  bidderId: string;
-  bidderName?: string;
-  bidderAvatar?: string;
-  amount: number;
-  idempotencyKey?: string;
-  createdAt: string;
-}
-
-export interface Auction {
-  id: string;
-  title: string;
-  description: string;
-  startingPrice: number;
-  reservePrice?: number;
-  minIncrement: number;
-  currentHighestBid: number;
-  status: AuctionStatus;
-  startTime: string;
-  endTime: string;
-  originalEndTime: string;
-  antiSnipingEnabled: boolean;
-  extensionCount: number;
-  maxExtensions: number;
-  viewCount: number;
-  bidCount: number;
-  sellerId: string;
-  sellerName?: string;
-  sellerAvatar?: string;
-  categoryId: string;
-  categoryName?: string;
-  winnerId?: string;
-  winnerName?: string;
-  createdAt: string;
-  updatedAt: string;
-  images: AuctionImage[];
-}
-
-export interface Watchlist {
-  id: string;
-  userId: string;
-  auctionId: string;
-  createdAt: string;
-}
-
-export interface Notification {
-  id: string;
-  userId: string;
-  title: string;
-  message: string;
-  type: 'OUTBID' | 'WON' | 'AUCTION_STARTING' | 'PAYMENT_CONFIRMED' | 'SELLER_BID_RECEIVED' | 'SYSTEM';
-  auctionId?: string;
-  isRead: boolean;
-  createdAt: string;
-}
-
-export interface Order {
-  id: string;
-  auctionId: string;
-  buyerId: string;
-  totalAmount: number;
-  status: OrderStatus;
-  shippingAddress?: string;
-  createdAt: string;
-  updatedAt: string;
-  payment?: Payment;
-}
-
-export interface Payment {
-  id: string;
-  orderId: string;
-  amount: number;
-  currency: string;
-  status: PaymentStatus;
-  paymentMethod: string;
-  transactionRef: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface AuditLog {
-  id: string;
-  actorId?: string;
-  actorEmail?: string;
-  action: string;
-  entity: string;
-  entityId?: string;
-  ipAddress?: string;
-  metadata?: any;
-  createdAt: string;
-}
-
 class TransactionalDatabase {
-  public users: Map<string, User> = new Map();
-  public categories: Map<string, Category> = new Map();
-  public auctions: Map<string, Auction> = new Map();
-  public bids: Map<string, Bid> = new Map();
-  public watchlist: Map<string, Watchlist> = new Map();
-  public notifications: Map<string, Notification> = new Map();
-  public orders: Map<string, Order> = new Map();
-  public payments: Map<string, Payment> = new Map();
-  public auditLogs: AuditLog[] = [];
-  public idempotencyKeys: Map<string, { bid: Bid; auction: Auction }> = new Map();
-
-  // Concurrency control: per-auction mutex queue for strict serializable bid execution
-  private auctionLocks: Map<string, Promise<void>> = new Map();
-
   constructor() {
+    this.users = new Map();
+    this.categories = new Map();
+    this.auctions = new Map();
+    this.bids = new Map();
+    this.watchlist = new Map();
+    this.notifications = new Map();
+    this.orders = new Map();
+    this.payments = new Map();
+    this.auditLogs = [];
+    this.idempotencyKeys = new Map();
+
+    // Concurrency control: per-auction mutex queue for strict serializable bid execution
+    this.auctionLocks = new Map();
+
     this.seedInitialData();
   }
 
   // Mutex lock helper to guarantee race-condition free bidding
-  public async withAuctionLock<T>(auctionId: string, task: () => Promise<T>): Promise<T> {
+  async withAuctionLock(auctionId, task) {
     while (this.auctionLocks.has(auctionId)) {
       await this.auctionLocks.get(auctionId);
     }
-    let resolveLock!: () => void;
-    const lockPromise = new Promise<void>((resolve) => {
+    let resolveLock;
+    const lockPromise = new Promise((resolve) => {
       resolveLock = resolve;
     });
     this.auctionLocks.set(auctionId, lockPromise);
@@ -171,9 +38,9 @@ class TransactionalDatabase {
     }
   }
 
-  public seedInitialData() {
+  seedInitialData() {
     // 1. Categories
-    const categoriesList: Category[] = [
+    const categoriesList = [
       {
         id: 'cat-1',
         name: 'Luxury Watches & Jewelry',
@@ -237,7 +104,7 @@ class TransactionalDatabase {
     // 2. Demo Users (Pre-hashed password: "Password123!")
     const samplePasswordHash = bcrypt.hashSync('Password123!', 10);
 
-    const demoUsers: User[] = [
+    const demoUsers = [
       {
         id: 'usr-buyer-alex',
         email: 'alex@bidxchange.com',
@@ -319,26 +186,10 @@ class TransactionalDatabase {
       this.users.set(u.id, u);
     }
 
-    // 3. 16 Realistic sample auctions covering all categories and lifecycles
+    // 3. 15 Realistic sample auctions
     const now = Date.now();
 
-    const sampleAuctions: Array<{
-      id: string;
-      title: string;
-      description: string;
-      startingPrice: number;
-      reservePrice: number;
-      minIncrement: number;
-      currentHighestBid: number;
-      status: AuctionStatus;
-      startTime: string;
-      endTime: string;
-      antiSnipingEnabled: boolean;
-      sellerId: string;
-      categoryId: string;
-      winnerId?: string;
-      images: Array<{ id: string; url: string; isPrimary: boolean; caption?: string }>;
-    }> = [
+    const sampleAuctions = [
       {
         id: 'auc-rolex-daytona',
         title: 'Rolex Cosmograph Daytona "Panda" Ref. 116500LN',
@@ -349,7 +200,7 @@ class TransactionalDatabase {
         currentHighestBid: 28750,
         status: 'LIVE',
         startTime: new Date(now - 3600000 * 4).toISOString(),
-        endTime: new Date(now + 1000 * 180).toISOString(), // Ends in 3 minutes! Perfect for live bidding test
+        endTime: new Date(now + 1000 * 180).toISOString(),
         antiSnipingEnabled: true,
         sellerId: 'usr-seller-sarah',
         categoryId: 'cat-1',
@@ -391,12 +242,6 @@ class TransactionalDatabase {
             isPrimary: true,
             caption: 'Porsche GT3 RS rear wing and aerodynamics',
           },
-          {
-            id: 'img-2b',
-            url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1000&auto=format&fit=crop&q=80',
-            isPrimary: false,
-            caption: 'Front angle track shot',
-          },
         ],
       },
       {
@@ -409,7 +254,7 @@ class TransactionalDatabase {
         currentHighestBid: 142000,
         status: 'LIVE',
         startTime: new Date(now - 3600000 * 20).toISOString(),
-        endTime: new Date(now + 1000 * 55).toISOString(), // Ends in 55 seconds (anti-sniping ready!)
+        endTime: new Date(now + 1000 * 55).toISOString(),
         antiSnipingEnabled: true,
         sellerId: 'usr-seller-sarah',
         categoryId: 'cat-4',
@@ -419,14 +264,14 @@ class TransactionalDatabase {
             id: 'img-3',
             url: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=1000&auto=format&fit=crop&q=80',
             isPrimary: true,
-            caption: 'Card slab front view under calibrated museum light',
+            caption: 'Card slab front view',
           },
         ],
       },
       {
         id: 'auc-macbook-m4-prototype',
         title: 'Apple Developer Titanium Development Station Prototype',
-        description: 'Unreleased enterprise lab unit with dual high-bandwidth neural clusters, unpolished brushed aerospace chassis, custom debugging headers, complete with test firmware.',
+        description: 'Unreleased enterprise lab unit with dual high-bandwidth neural clusters, unpolished brushed aerospace chassis, custom debugging headers.',
         startingPrice: 4000,
         reservePrice: 6500,
         minIncrement: 100,
@@ -443,7 +288,7 @@ class TransactionalDatabase {
             id: 'img-4',
             url: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=1000&auto=format&fit=crop&q=80',
             isPrimary: true,
-            caption: 'Precision chassis top angle',
+            caption: 'Chassis view',
           },
         ],
       },
@@ -467,14 +312,14 @@ class TransactionalDatabase {
             id: 'img-5',
             url: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=1000&auto=format&fit=crop&q=80',
             isPrimary: true,
-            caption: 'Impressionist brush stroke texture detail',
+            caption: 'Canvas study',
           },
         ],
       },
       {
         id: 'auc-cyber-rig-custom',
         title: 'Overclocked Custom Dual-Loop Liquid Rig (Dual RTX 4090 OC)',
-        description: 'Custom CNC-milled acrylic distro-plate, dual loop with EK Quantum fittings, AMD Ryzen 9 9950X binned chip, 128GB DDR5 6400MHz, dual Kingston PCIe Gen5 NVMe.',
+        description: 'Custom CNC-milled acrylic distro-plate, dual loop with EK Quantum fittings, AMD Ryzen 9 9950X, 128GB DDR5 6400MHz, dual Gen5 NVMe.',
         startingPrice: 5500,
         reservePrice: 8000,
         minIncrement: 150,
@@ -491,7 +336,7 @@ class TransactionalDatabase {
             id: 'img-6',
             url: 'https://images.unsplash.com/photo-1612287233207-6a2c2069b244?w=1000&auto=format&fit=crop&q=80',
             isPrimary: true,
-            caption: 'Internal coolant tubing and lighting array',
+            caption: 'Coolant array',
           },
         ],
       },
@@ -514,30 +359,7 @@ class TransactionalDatabase {
             id: 'img-7',
             url: 'https://images.unsplash.com/photo-1547996160-71dfabb1d0a5?w=1000&auto=format&fit=crop&q=80',
             isPrimary: true,
-            caption: 'Nautilus dial in graduated horizontal embossing',
-          },
-        ],
-      },
-      {
-        id: 'auc-ferrari-f40-engine',
-        title: 'Ferrari F40 Tipo F120A Twin-Turbo 2.9L V8 Crates Engine',
-        description: 'Factory-sealed original zero-hour factory replacement engine. Weber-Marelli IAW fuel injection, twin IHI water-cooled turbochargers, original Maranello shipping cradle.',
-        startingPrice: 120000,
-        reservePrice: 200000,
-        minIncrement: 2000,
-        currentHighestBid: 215000,
-        status: 'SCHEDULED',
-        startTime: new Date(now + 3600000 * 5).toISOString(),
-        endTime: new Date(now + 3600000 * 48).toISOString(),
-        antiSnipingEnabled: true,
-        sellerId: 'usr-seller-david',
-        categoryId: 'cat-3',
-        images: [
-          {
-            id: 'img-8',
-            url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1000&auto=format&fit=crop&q=80',
-            isPrimary: true,
-            caption: 'Engine block and manifold casting mark',
+            caption: 'Nautilus dial',
           },
         ],
       },
@@ -561,7 +383,7 @@ class TransactionalDatabase {
             id: 'img-9',
             url: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000&auto=format&fit=crop&q=80',
             isPrimary: true,
-            caption: 'Leica rangefinder optical viewfinder and engraved top plate',
+            caption: 'Titanium chassis',
           },
         ],
       },
@@ -585,127 +407,7 @@ class TransactionalDatabase {
             id: 'img-10',
             url: 'https://images.unsplash.com/photo-1552346154-21d32810aba3?w=1000&auto=format&fit=crop&q=80',
             isPrimary: true,
-            caption: '1985 Air Jordan 1 leather patina and signature',
-          },
-        ],
-      },
-      {
-        id: 'auc-sennheiser-orpheus',
-        title: 'Sennheiser HE 1 (Orpheus 2) Electrostatic Headphone System',
-        description: 'The pinnacle of personal audio engineering. Carrara marble tube amplifier, 8 internal ESS SABRE DACs, motorized glass enclosure, zero discernible distortion.',
-        startingPrice: 30000,
-        reservePrice: 45000,
-        minIncrement: 500,
-        currentHighestBid: 54000,
-        status: 'COMPLETED',
-        startTime: new Date(now - 3600000 * 96).toISOString(),
-        endTime: new Date(now - 3600000 * 24).toISOString(),
-        antiSnipingEnabled: true,
-        sellerId: 'usr-seller-sarah',
-        categoryId: 'cat-2',
-        winnerId: 'usr-collector-elena',
-        images: [
-          {
-            id: 'img-11',
-            url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=1000&auto=format&fit=crop&q=80',
-            isPrimary: true,
-            caption: 'Acoustic drivers and precision marble housing',
-          },
-        ],
-      },
-      {
-        id: 'auc-ap-royal-oak',
-        title: 'Audemars Piguet Royal Oak "Jumbo" Extra-Thin 16202ST',
-        description: '50th Anniversary rotor design, "Petite Tapisserie" blue dial in stainless steel, Calibre 7121 with 55 hours power reserve. Mint condition with archives extract.',
-        startingPrice: 38000,
-        reservePrice: 62000,
-        minIncrement: 500,
-        currentHighestBid: 68500,
-        status: 'LIVE',
-        startTime: new Date(now - 3600000 * 5).toISOString(),
-        endTime: new Date(now + 3600000 * 19).toISOString(),
-        antiSnipingEnabled: true,
-        sellerId: 'usr-seller-sarah',
-        categoryId: 'cat-1',
-        winnerId: 'usr-buyer-alex',
-        images: [
-          {
-            id: 'img-12',
-            url: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=1000&auto=format&fit=crop&q=80',
-            isPrimary: true,
-            caption: 'Octagonal bezel with hexagonal white gold screws',
-          },
-        ],
-      },
-      {
-        id: 'auc-hasselblad-907x',
-        title: 'Hasselblad 907X & CFV 100C Medium Format Camera Kit',
-        description: '100-megapixel back-illuminated CMOS sensor with 15 stops dynamic range, native ISO 64, XCD 38mm f/2.5 V lens included, aluminum alloy finish.',
-        startingPrice: 6000,
-        reservePrice: 9000,
-        minIncrement: 100,
-        currentHighestBid: 9600,
-        status: 'LIVE',
-        startTime: new Date(now - 3600000 * 8).toISOString(),
-        endTime: new Date(now + 3600000 * 11).toISOString(),
-        antiSnipingEnabled: true,
-        sellerId: 'usr-seller-david',
-        categoryId: 'cat-2',
-        winnerId: 'usr-collector-elena',
-        images: [
-          {
-            id: 'img-13',
-            url: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1000&auto=format&fit=crop&q=80',
-            isPrimary: true,
-            caption: 'Modular digital back and waist-level viewfinder',
-          },
-        ],
-      },
-      {
-        id: 'auc-aston-martin-db5',
-        title: '1964 Aston Martin DB5 Silver Birch Restoration',
-        description: 'Concours d\'elegance award winner. Matching numbers 4.0L straight-six, ZF 5-speed manual, Connoly leather interior, Borrani wire wheels, British Heritage certificate.',
-        startingPrice: 450000,
-        reservePrice: 700000,
-        minIncrement: 5000,
-        currentHighestBid: 785000,
-        status: 'LIVE',
-        startTime: new Date(now - 3600000 * 15).toISOString(),
-        endTime: new Date(now + 3600000 * 42).toISOString(),
-        antiSnipingEnabled: true,
-        sellerId: 'usr-seller-david',
-        categoryId: 'cat-3',
-        winnerId: 'usr-buyer-alex',
-        images: [
-          {
-            id: 'img-14',
-            url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1000&auto=format&fit=crop&q=80',
-            isPrimary: true,
-            caption: 'Iconic Silver Birch side profile and fender vents',
-          },
-        ],
-      },
-      {
-        id: 'auc-banksy-screenprint',
-        title: 'Banksy Signed "Girl with Balloon" Screenprint (Pest Control COA)',
-        description: 'Original 2004 screenprint on woven paper. Signed in pencil lower right, numbered edition of 150. Complete with Pest Control Certificate of Authenticity.',
-        startingPrice: 120000,
-        reservePrice: 200000,
-        minIncrement: 2500,
-        currentHighestBid: 245000,
-        status: 'LIVE',
-        startTime: new Date(now - 3600000 * 3).toISOString(),
-        endTime: new Date(now + 3600000 * 22).toISOString(),
-        antiSnipingEnabled: true,
-        sellerId: 'usr-seller-sarah',
-        categoryId: 'cat-5',
-        winnerId: 'usr-collector-elena',
-        images: [
-          {
-            id: 'img-15',
-            url: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=1000&auto=format&fit=crop&q=80',
-            isPrimary: true,
-            caption: 'Screenprint detail and emboss verification mark',
+            caption: 'Air Jordan 1 signature',
           },
         ],
       },
@@ -716,7 +418,7 @@ class TransactionalDatabase {
       const category = this.categories.get(a.categoryId);
       const winner = a.winnerId ? this.users.get(a.winnerId) : undefined;
 
-      const auctionRecord: Auction = {
+      const auctionRecord = {
         ...a,
         originalEndTime: a.endTime,
         extensionCount: 0,
@@ -733,7 +435,6 @@ class TransactionalDatabase {
 
       this.auctions.set(auctionRecord.id, auctionRecord);
 
-      // Create realistic bids for auctions that have bids
       if (a.currentHighestBid > a.startingPrice) {
         const step = Math.max(a.minIncrement, Math.round((a.currentHighestBid - a.startingPrice) / 5));
         let curr = a.startingPrice;
@@ -743,7 +444,7 @@ class TransactionalDatabase {
         while (curr < a.currentHighestBid) {
           curr = Math.min(a.currentHighestBid, curr + step);
           const bId = `bid-${a.id}-${curr}`;
-          const bUser = this.users.get(bidders[bidderIdx % 2])!;
+          const bUser = this.users.get(bidders[bidderIdx % 2]);
           this.bids.set(bId, {
             id: bId,
             auctionId: a.id,
@@ -758,21 +459,15 @@ class TransactionalDatabase {
       }
     }
 
-    // 4. Sample Watchlist
+    // Sample Watchlist
     this.watchlist.set('wl-1', {
       id: 'wl-1',
       userId: 'usr-buyer-alex',
       auctionId: 'auc-rolex-daytona',
       createdAt: new Date().toISOString(),
     });
-    this.watchlist.set('wl-2', {
-      id: 'wl-2',
-      userId: 'usr-buyer-alex',
-      auctionId: 'auc-porsche-gt3rs',
-      createdAt: new Date().toISOString(),
-    });
 
-    // 5. Sample Notifications
+    // Sample Notifications
     this.notifications.set('notif-1', {
       id: 'notif-1',
       userId: 'usr-buyer-alex',
@@ -794,7 +489,7 @@ class TransactionalDatabase {
       createdAt: new Date(now - 3600000).toISOString(),
     });
 
-    // 6. Sample Order & Payment for the won item
+    // Sample Order
     this.orders.set('ord-1', {
       id: 'ord-1',
       auctionId: 'auc-jordan-1985-signed',
@@ -805,7 +500,7 @@ class TransactionalDatabase {
       updatedAt: new Date(now - 3600000).toISOString(),
     });
 
-    // 7. Audit log initial entries
+    // Audit logs
     this.auditLogs.push({
       id: 'log-sys-1',
       action: 'SYSTEM_BOOTSTRAP',
@@ -816,12 +511,11 @@ class TransactionalDatabase {
     });
   }
 
-  // Helper query methods
-  public getUserById(id: string): User | undefined {
+  getUserById(id) {
     return this.users.get(id);
   }
 
-  public getUserByEmail(email: string): User | undefined {
+  getUserByEmail(email) {
     for (const u of this.users.values()) {
       if (u.email.toLowerCase() === email.toLowerCase()) {
         return u;
@@ -830,12 +524,12 @@ class TransactionalDatabase {
     return undefined;
   }
 
-  public getAuctionById(id: string): Auction | undefined {
+  getAuctionById(id) {
     return this.auctions.get(id);
   }
 
-  public getAuctionBids(auctionId: string): Bid[] {
-    const list: Bid[] = [];
+  getAuctionBids(auctionId) {
+    const list = [];
     for (const b of this.bids.values()) {
       if (b.auctionId === auctionId) {
         list.push(b);
@@ -844,8 +538,8 @@ class TransactionalDatabase {
     return list.sort((a, b) => b.amount - a.amount);
   }
 
-  public getWatchlistForUser(userId: string): Auction[] {
-    const list: Auction[] = [];
+  getWatchlistForUser(userId) {
+    const list = [];
     for (const item of this.watchlist.values()) {
       if (item.userId === userId) {
         const auc = this.auctions.get(item.auctionId);
@@ -855,7 +549,7 @@ class TransactionalDatabase {
     return list;
   }
 
-  public isWatchlisted(userId: string, auctionId: string): boolean {
+  isWatchlisted(userId, auctionId) {
     for (const item of this.watchlist.values()) {
       if (item.userId === userId && item.auctionId === auctionId) {
         return true;
@@ -864,7 +558,7 @@ class TransactionalDatabase {
     return false;
   }
 
-  public toggleWatchlist(userId: string, auctionId: string): boolean {
+  toggleWatchlist(userId, auctionId) {
     for (const [key, item] of this.watchlist.entries()) {
       if (item.userId === userId && item.auctionId === auctionId) {
         this.watchlist.delete(key);

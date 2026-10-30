@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { LifecycleWorker } from '../server/services/lifecycleWorker.ts';
-import { db, Auction } from '../server/db/database.ts';
+import { LifecycleWorker } from '../server/services/lifecycleWorker.js';
+import { db } from '../server/db/database.js';
 
 test('LifecycleWorker: should transition SCHEDULED auction to LIVE when start time arrives', () => {
   const id = `auc-sched-${Date.now()}`;
   const now = Date.now();
-  const auction: Auction = {
+  const auction = {
     id,
     title: 'Scheduled Test Piece',
     description: 'Testing lifecycle',
@@ -14,7 +14,7 @@ test('LifecycleWorker: should transition SCHEDULED auction to LIVE when start ti
     minIncrement: 25,
     currentHighestBid: 500,
     status: 'SCHEDULED',
-    startTime: new Date(now - 1000).toISOString(), // start time passed!
+    startTime: new Date(now - 1000).toISOString(),
     endTime: new Date(now + 60000).toISOString(),
     originalEndTime: new Date(now + 60000).toISOString(),
     antiSnipingEnabled: true,
@@ -32,14 +32,14 @@ test('LifecycleWorker: should transition SCHEDULED auction to LIVE when start ti
 
   LifecycleWorker.checkAndTransitionAuctions();
 
-  const updated = db.getAuctionById(id)!;
+  const updated = db.getAuctionById(id);
   assert.equal(updated.status, 'LIVE');
 });
 
 test('LifecycleWorker: should transition expired auction to PAYMENT_PENDING if winner exists', () => {
   const id = `auc-ended-${Date.now()}`;
   const now = Date.now();
-  const auction: Auction = {
+  const auction = {
     id,
     title: 'Ending Test Piece',
     description: 'Testing winner assignment',
@@ -48,7 +48,7 @@ test('LifecycleWorker: should transition expired auction to PAYMENT_PENDING if w
     currentHighestBid: 1200,
     status: 'LIVE',
     startTime: new Date(now - 100000).toISOString(),
-    endTime: new Date(now - 1000).toISOString(), // time has expired!
+    endTime: new Date(now - 1000).toISOString(),
     originalEndTime: new Date(now - 1000).toISOString(),
     antiSnipingEnabled: true,
     extensionCount: 0,
@@ -67,12 +67,11 @@ test('LifecycleWorker: should transition expired auction to PAYMENT_PENDING if w
 
   LifecycleWorker.checkAndTransitionAuctions();
 
-  const updated = db.getAuctionById(id)!;
+  const updated = db.getAuctionById(id);
   assert.equal(updated.status, 'PAYMENT_PENDING');
 
-  // Verify Order was created
   const order = Array.from(db.orders.values()).find((o) => o.auctionId === id);
   assert.ok(order);
-  assert.equal(order?.buyerId, 'usr-buyer-alex');
-  assert.equal(order?.totalAmount, 1200);
+  assert.equal(order.buyerId, 'usr-buyer-alex');
+  assert.equal(order.totalAmount, 1200);
 });

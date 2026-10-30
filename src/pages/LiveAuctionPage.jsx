@@ -5,45 +5,35 @@ import {
   ShieldCheck,
   Flame,
   Heart,
-  Share2,
   CheckCircle,
   AlertTriangle,
-  Sparkles,
-  ArrowRight,
   Trophy,
   History,
   Zap,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { Auction, Bid } from '../types/index.ts';
-import { api } from '../services/api.ts';
-import { useAuth } from '../context/AuthContext.tsx';
-import { useSocket } from '../context/SocketContext.tsx';
-import { CountdownTimer } from '../components/CountdownTimer.tsx';
-import { CheckoutModal } from '../components/CheckoutModal.tsx';
+import { api } from '../services/api.js';
+import { useAuth } from '../context/AuthContext.jsx';
+import { useSocket } from '../context/SocketContext.jsx';
+import { CountdownTimer } from '../components/CountdownTimer.jsx';
+import { CheckoutModal } from '../components/CheckoutModal.jsx';
 
-interface LiveAuctionPageProps {
-  auctionId: string;
-  onNavigate: (tab: string, auctionId?: string) => void;
-}
-
-export const LiveAuctionPage: React.FC<LiveAuctionPageProps> = ({ auctionId, onNavigate }) => {
+export const LiveAuctionPage = ({ auctionId, onNavigate }) => {
   const { user } = useAuth();
   const { socket, joinAuctionRoom, leaveAuctionRoom, viewerCount } = useSocket();
 
-  const [auction, setAuction] = useState<Auction | null>(null);
-  const [bids, setBids] = useState<Bid[]>([]);
+  const [auction, setAuction] = useState(null);
+  const [bids, setBids] = useState([]);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [bidAmount, setBidAmount] = useState<number>(0);
+  const [bidAmount, setBidAmount] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState(null);
+  const [successMsg, setSuccessMsg] = useState(null);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isSimulatingRace, setIsSimulatingRace] = useState(false);
-  const [antiSnipingAlert, setAntiSnipingAlert] = useState<string | null>(null);
+  const [antiSnipingAlert, setAntiSnipingAlert] = useState(null);
 
-  // Load initial auction data
   const loadAuction = async () => {
     try {
       const res = await api.auctions.getById(auctionId);
@@ -55,7 +45,7 @@ export const LiveAuctionPage: React.FC<LiveAuctionPageProps> = ({ auctionId, onN
           ? res.auction.startingPrice
           : res.auction.currentHighestBid + res.auction.minIncrement;
       setBidAmount(nextMin);
-    } catch (err: any) {
+    } catch (err) {
       setErrorMsg(err.message || 'Failed to load auction');
     } finally {
       setIsLoading(false);
@@ -71,21 +61,10 @@ export const LiveAuctionPage: React.FC<LiveAuctionPageProps> = ({ auctionId, onN
     };
   }, [auctionId]);
 
-  // Socket event listeners for real-time live bidding
   useEffect(() => {
     if (!socket) return;
 
-    const handleBidPlaced = (data: {
-      auctionId: string;
-      bid: Bid;
-      currentHighestBid: number;
-      bidCount: number;
-      winnerId?: string;
-      winnerName?: string;
-      timeExtended: boolean;
-      endTime: string;
-      extensionCount: number;
-    }) => {
+    const handleBidPlaced = (data) => {
       if (data.auctionId !== auctionId) return;
 
       setAuction((prev) => {
@@ -103,7 +82,6 @@ export const LiveAuctionPage: React.FC<LiveAuctionPageProps> = ({ auctionId, onN
 
       setBids((prev) => [data.bid, ...prev]);
 
-      // Update recommended next bid
       if (auction) {
         setBidAmount(data.currentHighestBid + auction.minIncrement);
       }
@@ -114,14 +92,14 @@ export const LiveAuctionPage: React.FC<LiveAuctionPageProps> = ({ auctionId, onN
       }
     };
 
-    const handleAuctionExtended = (data: { auctionId: string; newEndTime: string; reason: string }) => {
+    const handleAuctionExtended = (data) => {
       if (data.auctionId !== auctionId) return;
       setAuction((prev) => (prev ? { ...prev, endTime: data.newEndTime } : null));
       setAntiSnipingAlert(data.reason);
       setTimeout(() => setAntiSnipingAlert(null), 8000);
     };
 
-    const handleAuctionEnded = (data: { auctionId: string; winnerId?: string; winnerName?: string; finalBid: number }) => {
+    const handleAuctionEnded = (data) => {
       if (data.auctionId !== auctionId) return;
       setAuction((prev) => (prev ? { ...prev, status: 'PAYMENT_PENDING', winnerId: data.winnerId, winnerName: data.winnerName } : null));
 
@@ -158,7 +136,7 @@ export const LiveAuctionPage: React.FC<LiveAuctionPageProps> = ({ auctionId, onN
       ? auction.startingPrice
       : auction.currentHighestBid + auction.minIncrement;
 
-  const handlePlaceBid = async (e: React.FormEvent) => {
+  const handlePlaceBid = async (e) => {
     e.preventDefault();
     if (!user) {
       setErrorMsg('Please sign in to place a bid in this live auction.');
@@ -182,21 +160,19 @@ export const LiveAuctionPage: React.FC<LiveAuctionPageProps> = ({ auctionId, onN
       setAuction(res.auction);
       setBidAmount(res.auction.currentHighestBid + res.auction.minIncrement);
       setTimeout(() => setSuccessMsg(null), 4000);
-    } catch (err: any) {
+    } catch (err) {
       setErrorMsg(err.message || 'Failed to submit bid');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Concurrency Simulation: Submit 5 rapid parallel bids from different demo users
   const handleSimulateConcurrentBids = async () => {
     setIsSimulatingRace(true);
     setErrorMsg(null);
     setSuccessMsg(null);
 
     try {
-      // Fire 5 staggered bids simultaneously to demonstrate mutex serialization
       const current = auction.currentHighestBid;
       const step = auction.minIncrement;
 
@@ -207,7 +183,7 @@ export const LiveAuctionPage: React.FC<LiveAuctionPageProps> = ({ auctionId, onN
       await Promise.allSettled(promises);
       setSuccessMsg('⚡ Concurrency Simulation executed: 5 parallel bids processed safely with zero race conditions!');
       await loadAuction();
-    } catch (err: any) {
+    } catch (err) {
       setErrorMsg(err.message);
     } finally {
       setIsSimulatingRace(false);
@@ -220,7 +196,6 @@ export const LiveAuctionPage: React.FC<LiveAuctionPageProps> = ({ auctionId, onN
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Top Banner: Anti-Sniping Alert */}
       {antiSnipingAlert && (
         <div className="p-4 rounded-2xl bg-amber-500/15 border-2 border-amber-500/50 text-amber-300 flex items-center justify-between gap-4 animate-bounce">
           <div className="flex items-center gap-3">
@@ -233,7 +208,6 @@ export const LiveAuctionPage: React.FC<LiveAuctionPageProps> = ({ auctionId, onN
         </div>
       )}
 
-      {/* Winner Victory Banner */}
       {isEnded && (
         <div className="p-6 rounded-3xl bg-gradient-to-r from-emerald-950/80 via-slate-900 to-emerald-950/80 border-2 border-emerald-500/60 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4 text-center sm:text-left">
@@ -269,11 +243,8 @@ export const LiveAuctionPage: React.FC<LiveAuctionPageProps> = ({ auctionId, onN
         </div>
       )}
 
-      {/* Main Grid: Gallery & Live Bidding Arena */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Column: Image Gallery & Description (7 Cols) */}
         <div className="lg:col-span-7 space-y-6">
-          {/* Main Display Image */}
           <div className="relative aspect-[4/3] w-full rounded-3xl overflow-hidden bg-slate-950 border border-slate-800 shadow-2xl">
             <img
               src={images[activeImageIdx]?.url}
@@ -282,7 +253,6 @@ export const LiveAuctionPage: React.FC<LiveAuctionPageProps> = ({ auctionId, onN
             />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent pointer-events-none" />
 
-            {/* Live Indicator overlay */}
             <div className="absolute top-4 left-4 flex items-center gap-2">
               {isLive ? (
                 <span className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-rose-600 text-white shadow-xl shadow-rose-950/60">
@@ -296,14 +266,12 @@ export const LiveAuctionPage: React.FC<LiveAuctionPageProps> = ({ auctionId, onN
               )}
             </div>
 
-            {/* Live Viewer Counter */}
             <div className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-900/80 text-slate-300 backdrop-blur-md border border-slate-700">
               <Users className="w-3.5 h-3.5 text-amber-400" />
               <span>{viewerCount} Live Viewers</span>
             </div>
           </div>
 
-          {/* Thumbnails */}
           {images.length > 1 && (
             <div className="flex gap-3 overflow-x-auto pb-1">
               {images.map((img, idx) => (
@@ -320,7 +288,6 @@ export const LiveAuctionPage: React.FC<LiveAuctionPageProps> = ({ auctionId, onN
             </div>
           )}
 
-          {/* Product Details & Provenance */}
           <div className="p-6 sm:p-8 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-6">
             <div>
               <span className="text-xs font-semibold uppercase tracking-wider text-amber-400">
@@ -338,7 +305,6 @@ export const LiveAuctionPage: React.FC<LiveAuctionPageProps> = ({ auctionId, onN
               <p>{auction.description}</p>
             </div>
 
-            {/* Seller profile snippet */}
             <div className="pt-6 border-t border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <img
@@ -373,11 +339,8 @@ export const LiveAuctionPage: React.FC<LiveAuctionPageProps> = ({ auctionId, onN
           </div>
         </div>
 
-        {/* Right Column: Live Bidding Arena & Feed (5 Cols) */}
         <div className="lg:col-span-5 space-y-6">
-          {/* Real-time Bid Monitor Box */}
           <div className="p-6 sm:p-7 rounded-3xl bg-slate-900 border-2 border-slate-800 hover:border-amber-500/40 shadow-2xl shadow-black space-y-6 transition-all">
-            {/* Countdown Clock */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-800">
               <div>
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
@@ -399,7 +362,6 @@ export const LiveAuctionPage: React.FC<LiveAuctionPageProps> = ({ auctionId, onN
               </div>
             </div>
 
-            {/* Current Highest Bid Card */}
             <div className="p-5 rounded-2xl bg-slate-950 border border-slate-800/80 space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-semibold uppercase tracking-wider text-slate-400">
@@ -428,7 +390,6 @@ export const LiveAuctionPage: React.FC<LiveAuctionPageProps> = ({ auctionId, onN
               </div>
             </div>
 
-            {/* Feedback Messages */}
             {errorMsg && (
               <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2 animate-fadeIn">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
@@ -443,10 +404,8 @@ export const LiveAuctionPage: React.FC<LiveAuctionPageProps> = ({ auctionId, onN
               </div>
             )}
 
-            {/* Place Bid Controls */}
             {isLive ? (
               <form onSubmit={handlePlaceBid} className="space-y-4">
-                {/* Preset increment shortcuts */}
                 <div>
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
                     Quick Increment
@@ -468,7 +427,6 @@ export const LiveAuctionPage: React.FC<LiveAuctionPageProps> = ({ auctionId, onN
                   </div>
                 </div>
 
-                {/* Amount Input */}
                 <div>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-amber-400">
@@ -489,7 +447,6 @@ export const LiveAuctionPage: React.FC<LiveAuctionPageProps> = ({ auctionId, onN
                   </div>
                 </div>
 
-                {/* Submit Bid Button */}
                 <button
                   type="submit"
                   disabled={isSubmitting}
@@ -505,7 +462,6 @@ export const LiveAuctionPage: React.FC<LiveAuctionPageProps> = ({ auctionId, onN
                   )}
                 </button>
 
-                {/* CONCURRENCY SIMULATION FEATURE */}
                 <div className="pt-2">
                   <button
                     type="button"
@@ -529,7 +485,6 @@ export const LiveAuctionPage: React.FC<LiveAuctionPageProps> = ({ auctionId, onN
             )}
           </div>
 
-          {/* Live Bidding Stream / History Feed */}
           <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
@@ -580,7 +535,6 @@ export const LiveAuctionPage: React.FC<LiveAuctionPageProps> = ({ auctionId, onN
         </div>
       </div>
 
-      {/* Mock Checkout Modal for Winner */}
       {isCheckoutOpen && (
         <CheckoutModal
           auction={auction}

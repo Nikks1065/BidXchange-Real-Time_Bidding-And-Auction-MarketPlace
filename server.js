@@ -2,10 +2,10 @@ import http from 'http';
 import path from 'path';
 import express from 'express';
 import { Server as SocketIOServer } from 'socket.io';
-import { apiRouter } from './src/server/apiRouter.ts';
-import { setupAuctionSockets } from './src/server/socket/auctionSocket.ts';
-import { setSocketIO } from './src/server/services/biddingEngine.ts';
-import { LifecycleWorker } from './src/server/services/lifecycleWorker.ts';
+import { apiRouter } from './src/server/apiRouter.js';
+import { setupAuctionSockets } from './src/server/socket/auctionSocket.js';
+import { setSocketIO } from './src/server/services/biddingEngine.js';
+import { LifecycleWorker } from './src/server/services/lifecycleWorker.js';
 
 const isProduction = process.env.NODE_ENV === 'production';
 const PORT = Number(process.env.PORT) || 3000;
@@ -27,23 +27,18 @@ async function startServer() {
   setupAuctionSockets(io);
   LifecycleWorker.start(io);
 
-  // Parse JSON payloads
   app.use(express.json());
-
-  // Mount API Router
   app.use('/api', apiRouter);
 
-  // Health check endpoint
   app.get('/api/health', (_req, res) => {
     res.json({
       status: 'ok',
-      service: 'BidXchange Real-Time Auction Engine',
+      service: 'BidXchange Real-Time Auction Engine (Pure JavaScript)',
       timestamp: new Date().toISOString(),
     });
   });
 
   if (!isProduction) {
-    // In development mode, mount Vite middleware
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: {
@@ -56,7 +51,6 @@ async function startServer() {
 
     app.use(vite.middlewares);
   } else {
-    // In production, serve built static assets
     const distPath = path.resolve(process.cwd(), 'dist');
     app.use(express.static(distPath));
 
@@ -66,11 +60,11 @@ async function startServer() {
   }
 
   server.listen(PORT, '0.0.0.0', () => {
-    console.log(`[BidXchange] Server running on http://0.0.0.0:${PORT}`);
+    console.log(`[BidXchange] JavaScript Server running on http://0.0.0.0:${PORT}`);
   });
 }
 
 startServer().catch((err) => {
-  console.error('[BidXchange] Fatal startup error:', err);
+  console.error('[BidXchange] Startup error:', err);
   process.exit(1);
 });

@@ -4,7 +4,6 @@ import {
   Radio,
   Compass,
   Store,
-  User as UserIcon,
   Shield,
   LogOut,
   Wallet,
@@ -13,17 +12,10 @@ import {
   Sparkles,
   ArrowRightLeft,
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext.tsx';
-import { NotificationBell } from './NotificationBell.tsx';
+import { useAuth } from '../context/AuthContext.jsx';
+import { NotificationBell } from './NotificationBell.jsx';
 
-interface NavbarProps {
-  currentTab: string;
-  onNavigate: (tab: string, auctionId?: string) => void;
-  onOpenAuth: () => void;
-  onOpenDemoSwitcher: () => void;
-}
-
-export const Navbar: React.FC<NavbarProps> = ({
+export const Navbar = ({
   currentTab,
   onNavigate,
   onOpenAuth,
@@ -34,7 +26,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const isAdmin = user?.role === 'ADMIN';
-  const isSeller = user?.roles.includes('SELLER');
+  const isSeller = user?.roles?.includes('SELLER');
 
   const navLinks = [
     { id: 'home', label: 'Home', icon: null },
@@ -49,7 +41,6 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-xl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
-          {/* Logo & Brand */}
           <div
             onClick={() => onNavigate('home')}
             className="flex items-center gap-3 cursor-pointer group"
@@ -73,7 +64,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center gap-1 lg:gap-2">
             {navLinks.map((link) => {
               const Icon = link.icon;
@@ -96,9 +86,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             })}
           </nav>
 
-          {/* Right Action Icons & User Controls */}
           <div className="flex items-center gap-3">
-            {/* Demo Personas button */}
             <button
               onClick={onOpenDemoSwitcher}
               className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-amber-400 border border-amber-500/30 transition-all hover:scale-105 shadow-sm"
@@ -108,10 +96,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>Demo Personas</span>
             </button>
 
-            {/* Notification Bell */}
             <NotificationBell onSelectAuction={(id) => onNavigate('live', id)} />
 
-            {/* User Profile or Sign In */}
             {user ? (
               <div className="relative">
                 <button
@@ -133,7 +119,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                 </button>
 
-                {/* Profile dropdown */}
                 {isProfileOpen && (
                   <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl z-50 overflow-hidden animate-fadeIn">
                     <div className="p-4 border-b border-slate-800 bg-slate-950/70">
@@ -224,7 +209,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             )}
 
-            {/* Mobile menu toggle */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="md:hidden p-2 text-slate-300 hover:text-white rounded-xl bg-slate-900 border border-slate-800"
@@ -235,7 +219,6 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      {/* Mobile Drawer */}
       {isMobileMenuOpen && (
         <div className="md:hidden border-t border-slate-800 bg-slate-950 px-4 pt-3 pb-6 space-y-2">
           {navLinks.map((link) => (

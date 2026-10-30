@@ -1,26 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User } from '../types/index.ts';
-import { api, tokenStorage } from '../services/api.ts';
+import { api, tokenStorage } from '../services/api.js';
 
-interface AuthContextType {
-  user: User | null;
-  token: string | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (data: { email: string; password: string; name: string; role?: string }) => Promise<void>;
-  logout: () => void;
-  switchDemoAccount: (role: 'buyer' | 'seller' | 'admin') => Promise<void>;
-  toggleSellerRole: () => Promise<void>;
-  refreshUser: () => Promise<void>;
-}
+const AuthContext = createContext(undefined);
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(tokenStorage.get());
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(tokenStorage.get());
+  const [isLoading, setIsLoading] = useState(true);
 
   const fetchCurrentUser = async () => {
     try {
@@ -41,14 +27,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fetchCurrentUser();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email, password) => {
     const res = await api.auth.login({ email, password });
     tokenStorage.set(res.token);
     setToken(res.token);
     setUser(res.user);
   };
 
-  const register = async (data: { email: string; password: string; name: string; role?: string }) => {
+  const register = async (data) => {
     const res = await api.auth.register(data);
     tokenStorage.set(res.token);
     setToken(res.token);
@@ -61,7 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   };
 
-  const switchDemoAccount = async (role: 'buyer' | 'seller' | 'admin') => {
+  const switchDemoAccount = async (role) => {
     let email = 'alex@bidxchange.com';
     if (role === 'seller') email = 'sarah@bidxchange.com';
     if (role === 'admin') email = 'admin@bidxchange.com';

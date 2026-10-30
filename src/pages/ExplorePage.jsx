@@ -1,33 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import {
   Search,
-  SlidersHorizontal,
-  Flame,
-  Clock,
-  Sparkles,
   RotateCcw,
 } from 'lucide-react';
-import { Auction, Category } from '../types/index.ts';
-import { api } from '../services/api.ts';
-import { AuctionCard } from '../components/AuctionCard.tsx';
+import { api } from '../services/api.js';
+import { AuctionCard } from '../components/AuctionCard.jsx';
 
-interface ExplorePageProps {
-  onSelectAuction: (auction: Auction) => void;
-  onOpenBidModal: (auction: Auction) => void;
-}
-
-export const ExplorePage: React.FC<ExplorePageProps> = ({ onSelectAuction, onOpenBidModal }) => {
-  const [auctions, setAuctions] = useState<Auction[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+export const ExplorePage = ({ onSelectAuction, onOpenBidModal }) => {
+  const [auctions, setAuctions] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Filters state
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('endingSoon');
-  const [minPrice, setMinPrice] = useState<number | ''>('');
-  const [maxPrice, setMaxPrice] = useState<number | ''>('');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
 
   const fetchAuctions = async () => {
     setIsLoading(true);
@@ -78,7 +67,6 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({ onSelectAuction, onOpe
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8">
-      {/* Header */}
       <div>
         <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
           Marketplace Catalog
@@ -91,9 +79,7 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({ onSelectAuction, onOpe
         </p>
       </div>
 
-      {/* Filter and Search Bar */}
       <div className="p-4 sm:p-6 rounded-3xl bg-slate-900/90 border border-slate-800 space-y-4">
-        {/* Top search & Sort */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
           <div className="md:col-span-8 relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -130,7 +116,6 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({ onSelectAuction, onOpe
           </div>
         </div>
 
-        {/* Category Pills */}
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
           <button
             onClick={() => setSelectedCategory('all')}
@@ -157,9 +142,7 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({ onSelectAuction, onOpe
           ))}
         </div>
 
-        {/* Secondary Status & Price filter ribbon */}
         <div className="pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-4 text-xs">
-          {/* Status filters */}
           <div className="flex items-center gap-2">
             <span className="text-slate-400 font-medium">Status:</span>
             {[
@@ -182,7 +165,6 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({ onSelectAuction, onOpe
             ))}
           </div>
 
-          {/* Min & Max price inputs */}
           <div className="flex items-center gap-2">
             <span className="text-slate-400 font-medium">Price Range:</span>
             <input
@@ -204,7 +186,6 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({ onSelectAuction, onOpe
         </div>
       </div>
 
-      {/* Results Count & Grid */}
       <div>
         <div className="flex items-center justify-between mb-6">
           <span className="text-xs font-semibold text-slate-400">

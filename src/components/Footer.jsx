@@ -1,14 +1,9 @@
 import React from 'react';
 import { Gavel, ShieldCheck, Zap, Lock, RefreshCcw } from 'lucide-react';
 
-interface FooterProps {
-  onNavigate: (tab: string) => void;
-}
-
-export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
+export const Footer = ({ onNavigate }) => {
   return (
     <footer className="w-full border-t border-slate-800/80 bg-slate-950 text-slate-400 text-xs">
-      {/* Guarantees Ribbon */}
       <div className="border-b border-slate-800/60 bg-slate-900/40 py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 md:grid-cols-4 gap-6">
           <div className="flex items-center gap-3">
@@ -53,7 +48,6 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* Main Footer Links */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-4">
@@ -125,13 +119,13 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           </div>
 
           <div>
-            <h5 className="text-xs font-bold uppercase tracking-wider text-white mb-3">Live Architecture</h5>
+            <h5 className="text-xs font-bold uppercase tracking-wider text-white mb-3">Pure JavaScript Architecture</h5>
             <p className="text-xs text-slate-400 leading-relaxed mb-3">
-              Engineered with Node.js, Express, Socket.IO, PostgreSQL Prisma Schema, and deterministic unit tests.
+              Engineered natively with Node.js, Express, Socket.IO, PostgreSQL Prisma Schema, and built-in Node test runner.
             </p>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-emerald-400">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>All Systems Operational (Port 3000)</span>
+              <span>Pure JS Engine Online (Port 3000)</span>
             </div>
           </div>
         </div>

@@ -1,28 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, AlertTriangle } from 'lucide-react';
 
-interface CountdownTimerProps {
-  endTime: string;
-  isLive?: boolean;
-  onExpire?: () => void;
-  compact?: boolean;
-  showUrgentWarning?: boolean;
-}
-
-export const CountdownTimer: React.FC<CountdownTimerProps> = ({
+export const CountdownTimer = ({
   endTime,
   isLive = true,
   onExpire,
   compact = false,
   showUrgentWarning = true,
 }) => {
-  const [timeLeft, setTimeLeft] = useState<{
-    days: number;
-    hours: number;
-    minutes: number;
-    seconds: number;
-    totalMs: number;
-  }>({ days: 0, hours: 0, minutes: 0, seconds: 0, totalMs: 0 });
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0, totalMs: 0 });
 
   useEffect(() => {
     const calculateTime = () => {
@@ -46,8 +32,8 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
     return () => clearInterval(interval);
   }, [endTime, onExpire]);
 
-  const isUrgent = isLive && timeLeft.totalMs > 0 && timeLeft.totalMs <= 60000; // <= 60 seconds
-  const isAntiSnipingDanger = isLive && timeLeft.totalMs > 0 && timeLeft.totalMs <= 30000; // <= 30 seconds
+  const isUrgent = isLive && timeLeft.totalMs > 0 && timeLeft.totalMs <= 60000;
+  const isAntiSnipingDanger = isLive && timeLeft.totalMs > 0 && timeLeft.totalMs <= 30000;
   const hasEnded = timeLeft.totalMs <= 0;
 
   if (hasEnded) {

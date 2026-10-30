@@ -1,27 +1,9 @@
-import { db, Bid, Auction, Notification } from '../db/database.ts';
-import type { Server as SocketIOServer } from 'socket.io';
+import { db } from '../db/database.js';
 
-let ioInstance: SocketIOServer | null = null;
+let ioInstance = null;
 
-export function setSocketIO(io: SocketIOServer) {
+export function setSocketIO(io) {
   ioInstance = io;
-}
-
-export interface PlaceBidInput {
-  auctionId: string;
-  bidderId: string;
-  amount: number;
-  idempotencyKey?: string;
-}
-
-export interface BidResult {
-  success: boolean;
-  bid: Bid;
-  auction: Auction;
-  timeExtended: boolean;
-  newEndTime?: string;
-  previousBidderId?: string;
-  message: string;
 }
 
 export class BiddingEngine {
@@ -29,12 +11,10 @@ export class BiddingEngine {
    * Concurrency-safe, transactional bid submission.
    * Guarantees atomic serial execution per auction via mutex lock.
    */
-  public static async placeBid(input: PlaceBidInput): Promise<BidResult> {
-    const { auctionId, bidderId, amount, idempotencyKey } = input;
-
+  static async placeBid({ auctionId, bidderId, amount, idempotencyKey }) {
     // Idempotency check: Return prior successful bid if key matches
     if (idempotencyKey && db.idempotencyKeys.has(idempotencyKey)) {
-      const cached = db.idempotencyKeys.get(idempotencyKey)!;
+      const cached = db.idempotencyKeys.get(idempotencyKey);
       return {
         success: true,
         bid: cached.bid,
@@ -48,7 +28,7 @@ export class BiddingEngine {
     return await db.withAuctionLock(auctionId, async () => {
       // 1. Double check idempotency under lock
       if (idempotencyKey && db.idempotencyKeys.has(idempotencyKey)) {
-        const cached = db.idempotencyKeys.get(idempotencyKey)!;
+        const cached = db.idempotencyKeys.get(idempotencyKey);
         return {
           success: true,
           bid: cached.bid,
@@ -78,7 +58,6 @@ export class BiddingEngine {
       }
 
       if (now >= endTimeMs) {
-        // Mark as ended if time passed
         auction.status = 'ENDED';
         auction.updatedAt = new Date().toISOString();
         db.auctions.set(auction.id, auction);
@@ -141,7 +120,7 @@ export class BiddingEngine {
 
       // 8. Create Bid record
       const bidId = `bid-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-      const newBid: Bid = {
+      const newBid = {
         id: bidId,
         auctionId: auction.id,
         bidderId: bidder.id,
@@ -160,7 +139,7 @@ export class BiddingEngine {
 
       // 9. Notify previous highest bidder if outbid
       if (previousWinnerId && previousWinnerId !== bidder.id) {
-        const outbidNotif: Notification = {
+        const outbidNotif = {
           id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
           userId: previousWinnerId,
           title: 'You Have Been Outbid!',
@@ -172,14 +151,13 @@ export class BiddingEngine {
         };
         db.notifications.set(outbidNotif.id, outbidNotif);
 
-        // Notify over socket if connected
         if (ioInstance) {
           ioInstance.to(`user:${previousWinnerId}`).emit('notification', outbidNotif);
         }
       }
 
-      // Notify seller of new bid
-      const sellerNotif: Notification = {
+      // Notify seller
+      const sellerNotif = {
         id: `notif-${Date.now()}-seller`,
         userId: auction.sellerId,
         title: 'New Bid Received!',

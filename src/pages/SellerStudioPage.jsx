@@ -2,29 +2,19 @@ import React, { useState, useEffect } from 'react';
 import {
   Store,
   PlusCircle,
-  TrendingUp,
   Flame,
   Eye,
   DollarSign,
   AlertCircle,
   CheckCircle,
-  XCircle,
-  Clock,
-  Sparkles,
-  ShieldAlert,
 } from 'lucide-react';
-import { Auction, Category } from '../types/index.ts';
-import { api } from '../services/api.ts';
-import { useAuth } from '../context/AuthContext.tsx';
+import { api } from '../services/api.js';
+import { useAuth } from '../context/AuthContext.jsx';
 
-interface SellerStudioPageProps {
-  onNavigate: (tab: string, auctionId?: string) => void;
-}
-
-export const SellerStudioPage: React.FC<SellerStudioPageProps> = ({ onNavigate }) => {
+export const SellerStudioPage = ({ onNavigate }) => {
   const { user } = useAuth();
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [activeTab, setActiveTab] = useState<'active' | 'completed' | 'pending' | 'new'>('active');
+  const [categories, setCategories] = useState([]);
+  const [activeTab, setActiveTab] = useState('active');
   const [stats, setStats] = useState({
     totalAuctions: 0,
     activeCount: 0,
@@ -35,24 +25,18 @@ export const SellerStudioPage: React.FC<SellerStudioPageProps> = ({ onNavigate }
     totalBidsReceived: 0,
     totalViews: 0,
   });
-  const [auctions, setAuctions] = useState<{
-    active: Auction[];
-    completed: Auction[];
-    pendingPayment: Auction[];
-    cancelled: Auction[];
-  }>({
+  const [auctions, setAuctions] = useState({
     active: [],
     completed: [],
     pendingPayment: [],
     cancelled: [],
   });
 
-  // New Auction Form State
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [startingPrice, setStartingPrice] = useState(1000);
-  const [reservePrice, setReservePrice] = useState<number | ''>('');
+  const [reservePrice, setReservePrice] = useState('');
   const [minIncrement, setMinIncrement] = useState(50);
   const [durationHours, setDurationHours] = useState(24);
   const [selectedPresetImage, setSelectedPresetImage] = useState(
@@ -60,8 +44,8 @@ export const SellerStudioPage: React.FC<SellerStudioPageProps> = ({ onNavigate }
   );
   const [antiSnipingEnabled, setAntiSnipingEnabled] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState(null);
+  const [successMsg, setSuccessMsg] = useState(null);
 
   const presetImages = [
     { label: 'Rolex Watch', url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1000' },
@@ -85,7 +69,7 @@ export const SellerStudioPage: React.FC<SellerStudioPageProps> = ({ onNavigate }
       if (catRes.categories.length > 0 && !categoryId) {
         setCategoryId(catRes.categories[0].id);
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to load seller dashboard', err);
     }
   };
@@ -94,7 +78,7 @@ export const SellerStudioPage: React.FC<SellerStudioPageProps> = ({ onNavigate }
     fetchSellerData();
   }, [user]);
 
-  const handleCreateAuction = async (e: React.FormEvent) => {
+  const handleCreateAuction = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setErrorMsg(null);
@@ -114,34 +98,32 @@ export const SellerStudioPage: React.FC<SellerStudioPageProps> = ({ onNavigate }
       });
 
       setSuccessMsg(`Auction "${res.auction.title}" launched successfully!`);
-      // Reset form
       setTitle('');
       setDescription('');
       setStartingPrice(1000);
       setReservePrice('');
       fetchSellerData();
       setActiveTab('active');
-    } catch (err: any) {
+    } catch (err) {
       setErrorMsg(err.message || 'Failed to create auction');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleCancelAuction = async (auctionId: string) => {
+  const handleCancelAuction = async (auctionId) => {
     if (!window.confirm('Are you sure you want to cancel this auction?')) return;
     try {
       await api.auctions.cancel(auctionId);
       alert('Auction cancelled successfully.');
       fetchSellerData();
-    } catch (err: any) {
+    } catch (err) {
       alert(err.message || 'Failed to cancel auction');
     }
   };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
@@ -164,7 +146,6 @@ export const SellerStudioPage: React.FC<SellerStudioPageProps> = ({ onNavigate }
         </button>
       </div>
 
-      {/* KPI Stats Ribbon */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800">
           <div className="flex items-center justify-between text-slate-400 mb-2">
@@ -211,7 +192,6 @@ export const SellerStudioPage: React.FC<SellerStudioPageProps> = ({ onNavigate }
         </div>
       </div>
 
-      {/* Navigation Tabs */}
       <div className="flex gap-2 border-b border-slate-800 pb-2 overflow-x-auto">
         <button
           onClick={() => setActiveTab('active')}
@@ -255,7 +235,6 @@ export const SellerStudioPage: React.FC<SellerStudioPageProps> = ({ onNavigate }
         </button>
       </div>
 
-      {/* Tab Content: 1. CREATE AUCTION FORM */}
       {activeTab === 'new' && (
         <div className="p-6 sm:p-8 rounded-3xl bg-slate-900 border border-slate-800 max-w-3xl">
           <h2 className="text-xl font-bold text-white mb-2">Publish New Auction</h2>
@@ -324,7 +303,6 @@ export const SellerStudioPage: React.FC<SellerStudioPageProps> = ({ onNavigate }
               />
             </div>
 
-            {/* Pricing Details */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-2">
@@ -368,7 +346,6 @@ export const SellerStudioPage: React.FC<SellerStudioPageProps> = ({ onNavigate }
               </div>
             </div>
 
-            {/* Duration */}
             <div>
               <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-2">
                 Auction Duration
@@ -386,7 +363,6 @@ export const SellerStudioPage: React.FC<SellerStudioPageProps> = ({ onNavigate }
               </select>
             </div>
 
-            {/* Image Preset Selector */}
             <div>
               <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-2">
                 Select Catalog Product Photography
@@ -411,7 +387,6 @@ export const SellerStudioPage: React.FC<SellerStudioPageProps> = ({ onNavigate }
               </div>
             </div>
 
-            {/* Anti-Sniping Toggle */}
             <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-950 border border-slate-800">
               <input
                 type="checkbox"
@@ -437,7 +412,6 @@ export const SellerStudioPage: React.FC<SellerStudioPageProps> = ({ onNavigate }
         </div>
       )}
 
-      {/* Tab Content: 2. ACTIVE AUCTIONS LIST */}
       {activeTab === 'active' && (
         <div className="space-y-4">
           {auctions.active.length === 0 ? (
@@ -496,7 +470,6 @@ export const SellerStudioPage: React.FC<SellerStudioPageProps> = ({ onNavigate }
         </div>
       )}
 
-      {/* Tab Content: 3. COMPLETED AUCTIONS */}
       {activeTab === 'completed' && (
         <div className="space-y-4">
           {auctions.completed.length === 0 ? (
@@ -531,7 +504,6 @@ export const SellerStudioPage: React.FC<SellerStudioPageProps> = ({ onNavigate }
         </div>
       )}
 
-      {/* Tab Content: 4. PENDING PAYMENT */}
       {activeTab === 'pending' && (
         <div className="space-y-4">
           {auctions.pendingPayment.length === 0 ? (

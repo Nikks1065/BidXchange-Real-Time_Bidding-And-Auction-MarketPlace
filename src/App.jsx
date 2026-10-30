@@ -1,27 +1,26 @@
 import React, { useState } from 'react';
-import { AuthProvider } from './context/AuthContext.tsx';
-import { SocketProvider } from './context/SocketContext.tsx';
-import { Navbar } from './components/Navbar.tsx';
-import { Footer } from './components/Footer.tsx';
-import { HomePage } from './pages/HomePage.tsx';
-import { ExplorePage } from './pages/ExplorePage.tsx';
-import { LiveAuctionPage } from './pages/LiveAuctionPage.tsx';
-import { SellerStudioPage } from './pages/SellerStudioPage.tsx';
-import { BuyerDashboardPage } from './pages/BuyerDashboardPage.tsx';
-import { AdminPage } from './pages/AdminPage.tsx';
-import { AuthModal } from './pages/AuthModal.tsx';
-import { BidModal } from './components/BidModal.tsx';
-import { DemoSwitcherModal } from './components/DemoSwitcherModal.tsx';
-import { Auction } from './types/index.ts';
+import { AuthProvider } from './context/AuthContext.jsx';
+import { SocketProvider } from './context/SocketContext.jsx';
+import { Navbar } from './components/Navbar.jsx';
+import { Footer } from './components/Footer.jsx';
+import { HomePage } from './pages/HomePage.jsx';
+import { ExplorePage } from './pages/ExplorePage.jsx';
+import { LiveAuctionPage } from './pages/LiveAuctionPage.jsx';
+import { SellerStudioPage } from './pages/SellerStudioPage.jsx';
+import { BuyerDashboardPage } from './pages/BuyerDashboardPage.jsx';
+import { AdminPage } from './pages/AdminPage.jsx';
+import { AuthModal } from './pages/AuthModal.jsx';
+import { BidModal } from './components/BidModal.jsx';
+import { DemoSwitcherModal } from './components/DemoSwitcherModal.jsx';
 
 function MainApp() {
-  const [currentTab, setCurrentTab] = useState<string>('home');
-  const [selectedAuctionId, setSelectedAuctionId] = useState<string>('auc-rolex-daytona');
+  const [currentTab, setCurrentTab] = useState('home');
+  const [selectedAuctionId, setSelectedAuctionId] = useState('auc-rolex-daytona');
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isDemoSwitcherOpen, setIsDemoSwitcherOpen] = useState(false);
-  const [bidModalAuction, setBidModalAuction] = useState<Auction | null>(null);
+  const [bidModalAuction, setBidModalAuction] = useState(null);
 
-  const handleNavigate = (tab: string, auctionId?: string) => {
+  const handleNavigate = (tab, auctionId) => {
     if (auctionId) {
       setSelectedAuctionId(auctionId);
     }
@@ -29,7 +28,7 @@ function MainApp() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleOpenBidModal = (auction: Auction) => {
+  const handleOpenBidModal = (auction) => {
     setBidModalAuction(auction);
   };
 

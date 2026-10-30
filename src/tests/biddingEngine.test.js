@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { BiddingEngine } from '../server/services/biddingEngine.ts';
-import { db, Auction } from '../server/db/database.ts';
+import { BiddingEngine } from '../server/services/biddingEngine.js';
+import { db } from '../server/db/database.js';
 
-function createMockAuction(overrides: Partial<Auction> = {}): Auction {
+function createMockAuction(overrides = {}) {
   const id = `test-auc-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
   const now = Date.now();
-  const auction: Auction = {
+  const auction = {
     id,
     title: 'Test Collector Chronograph',
     description: 'Pristine test item',
@@ -15,7 +15,7 @@ function createMockAuction(overrides: Partial<Auction> = {}): Auction {
     currentHighestBid: 1000,
     status: 'LIVE',
     startTime: new Date(now - 10000).toISOString(),
-    endTime: new Date(now + 600000).toISOString(), // 10 minutes in future
+    endTime: new Date(now + 600000).toISOString(),
     originalEndTime: new Date(now + 600000).toISOString(),
     antiSnipingEnabled: true,
     extensionCount: 0,
@@ -35,7 +35,7 @@ function createMockAuction(overrides: Partial<Auction> = {}): Auction {
 
 test('BiddingEngine: should accept valid bid meeting minimum increment', async () => {
   const auction = createMockAuction({ currentHighestBid: 1000, minIncrement: 50, bidCount: 1 });
-  const bidder = db.getUserById('usr-buyer-alex')!;
+  const bidder = db.getUserById('usr-buyer-alex');
 
   const result = await BiddingEngine.placeBid({
     auctionId: auction.id,
@@ -52,14 +52,14 @@ test('BiddingEngine: should accept valid bid meeting minimum increment', async (
 
 test('BiddingEngine: should reject bid below minimum increment', async () => {
   const auction = createMockAuction({ currentHighestBid: 2000, minIncrement: 100, bidCount: 1 });
-  const bidder = db.getUserById('usr-collector-elena')!;
+  const bidder = db.getUserById('usr-collector-elena');
 
   await assert.rejects(
     async () => {
       await BiddingEngine.placeBid({
         auctionId: auction.id,
         bidderId: bidder.id,
-        amount: 2050, // needs at least 2100
+        amount: 2050,
       });
     },
     { message: /below the minimum required bid/ }
@@ -83,7 +83,6 @@ test('BiddingEngine: should reject seller bidding on their own auction', async (
 
 test('BiddingEngine: anti-sniping should extend auction when bid arrives in final 30 seconds', async () => {
   const now = Date.now();
-  // 15 seconds remaining
   const auction = createMockAuction({
     endTime: new Date(now + 15000).toISOString(),
     originalEndTime: new Date(now + 15000).toISOString(),
@@ -134,7 +133,6 @@ test('BiddingEngine: handles simultaneous concurrent bids safely without race co
   const bidder1 = 'usr-buyer-alex';
   const bidder2 = 'usr-collector-elena';
 
-  // Two simultaneous bids for different amounts submitted in parallel
   const promise1 = BiddingEngine.placeBid({ auctionId: auction.id, bidderId: bidder1, amount: 1100 });
   const promise2 = BiddingEngine.placeBid({ auctionId: auction.id, bidderId: bidder2, amount: 1200 });
 
@@ -142,6 +140,6 @@ test('BiddingEngine: handles simultaneous concurrent bids safely without race co
   const succeeded = results.filter((r) => r.status === 'fulfilled');
 
   assert.ok(succeeded.length >= 1, 'At least one bid succeeded');
-  const finalAuction = db.getAuctionById(auction.id)!;
+  const finalAuction = db.getAuctionById(auction.id);
   assert.ok(finalAuction.currentHighestBid >= 1100);
 });

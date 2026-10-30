@@ -1,17 +1,10 @@
 import React, { useState } from 'react';
-import { Heart, Flame, Eye, ArrowUpRight, ShieldCheck } from 'lucide-react';
-import { Auction } from '../types/index.ts';
-import { CountdownTimer } from './CountdownTimer.tsx';
-import { api } from '../services/api.ts';
-import { useAuth } from '../context/AuthContext.tsx';
+import { Heart, Flame, Eye, ArrowUpRight } from 'lucide-react';
+import { CountdownTimer } from './CountdownTimer.jsx';
+import { api } from '../services/api.js';
+import { useAuth } from '../context/AuthContext.jsx';
 
-interface AuctionCardProps {
-  auction: Auction;
-  onSelect: (auction: Auction) => void;
-  onOpenBidModal?: (auction: Auction) => void;
-}
-
-export const AuctionCard: React.FC<AuctionCardProps> = ({ auction, onSelect, onOpenBidModal }) => {
+export const AuctionCard = ({ auction, onSelect, onOpenBidModal }) => {
   const { user } = useAuth();
   const [isWatchlisted, setIsWatchlisted] = useState(auction.isWatchlisted || false);
   const [isHovered, setIsHovered] = useState(false);
@@ -25,20 +18,19 @@ export const AuctionCard: React.FC<AuctionCardProps> = ({ auction, onSelect, onO
   const isScheduled = auction.status === 'SCHEDULED';
   const isEnded = auction.status === 'ENDED' || auction.status === 'COMPLETED' || auction.status === 'PAYMENT_PENDING';
 
-  const handleWatchlistToggle = async (e: React.MouseEvent) => {
+  const handleWatchlistToggle = async (e) => {
     e.stopPropagation();
     if (!user) {
       alert('Please sign in or select a demo account to add items to your watchlist.');
       return;
     }
 
-    // Optimistic toggle
     const newState = !isWatchlisted;
     setIsWatchlisted(newState);
     try {
       await api.watchlist.toggle(auction.id);
     } catch {
-      setIsWatchlisted(!newState); // revert on error
+      setIsWatchlisted(!newState);
     }
   };
 
@@ -49,7 +41,6 @@ export const AuctionCard: React.FC<AuctionCardProps> = ({ auction, onSelect, onO
       onMouseLeave={() => setIsHovered(false)}
       className="group relative flex flex-col bg-slate-900/90 border border-slate-800 hover:border-amber-500/50 rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-amber-950/20 cursor-pointer"
     >
-      {/* Top Media & Badges */}
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-950">
         <img
           src={primaryImage}
@@ -59,7 +50,6 @@ export const AuctionCard: React.FC<AuctionCardProps> = ({ auction, onSelect, onO
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
 
-        {/* Status Badge */}
         <div className="absolute top-3 left-3 flex items-center gap-1.5">
           {isLive && (
             <span className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold uppercase tracking-wider rounded-full bg-rose-600/90 text-white backdrop-blur-md shadow-lg shadow-rose-950/50 border border-rose-400/30">
@@ -85,7 +75,6 @@ export const AuctionCard: React.FC<AuctionCardProps> = ({ auction, onSelect, onO
           )}
         </div>
 
-        {/* Watchlist Toggle */}
         <button
           onClick={handleWatchlistToggle}
           aria-label={isWatchlisted ? 'Remove from watchlist' : 'Add to watchlist'}
@@ -98,7 +87,6 @@ export const AuctionCard: React.FC<AuctionCardProps> = ({ auction, onSelect, onO
           <Heart className={`w-4 h-4 ${isWatchlisted ? 'fill-current' : ''}`} />
         </button>
 
-        {/* Countdown Floating Pill */}
         <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
           <CountdownTimer endTime={auction.endTime} isLive={isLive} compact />
           <div className="flex items-center gap-2 text-xs font-medium text-slate-300 bg-slate-900/80 px-2 py-1 rounded-md backdrop-blur-md border border-slate-800">
@@ -115,7 +103,6 @@ export const AuctionCard: React.FC<AuctionCardProps> = ({ auction, onSelect, onO
         </div>
       </div>
 
-      {/* Card Body */}
       <div className="flex flex-col flex-grow p-4 sm:p-5">
         <h3 className="text-base font-semibold text-white line-clamp-1 group-hover:text-amber-400 transition-colors">
           {auction.title}
@@ -124,7 +111,6 @@ export const AuctionCard: React.FC<AuctionCardProps> = ({ auction, onSelect, onO
           {auction.description}
         </p>
 
-        {/* Pricing Info */}
         <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-end justify-between">
           <div>
             <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
@@ -144,7 +130,6 @@ export const AuctionCard: React.FC<AuctionCardProps> = ({ auction, onSelect, onO
           </div>
         </div>
 
-        {/* Action Button */}
         <div className="mt-4 pt-2">
           {isLive ? (
             <button

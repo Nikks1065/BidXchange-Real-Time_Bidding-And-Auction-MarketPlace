@@ -1,13 +1,8 @@
 import React from 'react';
 import { X, UserCheck, Shield, ShoppingBag, Store, Sparkles } from 'lucide-react';
-import { useAuth } from '../context/AuthContext.tsx';
+import { useAuth } from '../context/AuthContext.jsx';
 
-interface DemoSwitcherModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-export const DemoSwitcherModal: React.FC<DemoSwitcherModalProps> = ({ isOpen, onClose }) => {
+export const DemoSwitcherModal = ({ isOpen, onClose }) => {
   const { user, switchDemoAccount } = useAuth();
 
   if (!isOpen) return null;
@@ -45,7 +40,7 @@ export const DemoSwitcherModal: React.FC<DemoSwitcherModalProps> = ({ isOpen, on
     },
   ];
 
-  const handleSelect = async (roleId: 'buyer' | 'seller' | 'admin') => {
+  const handleSelect = async (roleId) => {
     await switchDemoAccount(roleId);
     onClose();
   };
@@ -78,7 +73,7 @@ export const DemoSwitcherModal: React.FC<DemoSwitcherModalProps> = ({ isOpen, on
             return (
               <div
                 key={account.id}
-                onClick={() => handleSelect(account.id as any)}
+                onClick={() => handleSelect(account.id)}
                 className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center gap-4 ${
                   isCurrent
                     ? 'border-amber-500 bg-amber-500/5 shadow-lg shadow-amber-950/20'

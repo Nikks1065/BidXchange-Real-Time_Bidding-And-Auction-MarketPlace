@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { AuthService } from '../server/services/authService.ts';
-import { db } from '../server/db/database.ts';
+import { AuthService } from '../server/services/authService.js';
+import { db } from '../server/db/database.js';
 
 test('AuthService: should successfully register a new buyer', async () => {
   const email = `testuser-${Date.now()}@example.com`;
@@ -16,10 +16,9 @@ test('AuthService: should successfully register a new buyer', async () => {
   assert.equal(user.role, 'BUYER');
   assert.ok(token.length > 20);
 
-  // Check token verification
   const payload = AuthService.verifyToken(token);
   assert.ok(payload);
-  assert.equal(payload?.userId, user.id);
+  assert.equal(payload.userId, user.id);
 });
 
 test('AuthService: should prevent duplicate email registration', async () => {

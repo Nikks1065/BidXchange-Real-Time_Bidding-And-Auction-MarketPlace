@@ -1,30 +1,28 @@
-import { db, Notification, Order } from '../db/database.ts';
-import type { Server as SocketIOServer } from 'socket.io';
+import { db } from '../db/database.js';
 
 export class LifecycleWorker {
-  private static timer: NodeJS.Timeout | null = null;
-  private static io: SocketIOServer | null = null;
+  static timer = null;
+  static io = null;
 
-  public static start(io?: SocketIOServer) {
+  static start(io) {
     if (io) this.io = io;
     if (this.timer) clearInterval(this.timer);
 
-    // Run every 2 seconds for high precision auction lifecycle transitions
     this.timer = setInterval(() => {
       this.checkAndTransitionAuctions();
     }, 2000);
 
-    console.log('[LifecycleWorker] Auction state transition worker started (2s interval)');
+    console.log('[LifecycleWorker] Auction state transition worker running in pure JS (2s interval)');
   }
 
-  public static stop() {
+  static stop() {
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = null;
     }
   }
 
-  public static checkAndTransitionAuctions() {
+  static checkAndTransitionAuctions() {
     const now = Date.now();
 
     for (const auction of db.auctions.values()) {
@@ -36,8 +34,6 @@ export class LifecycleWorker {
         auction.status = 'LIVE';
         auction.updatedAt = new Date().toISOString();
         db.auctions.set(auction.id, auction);
-
-        console.log(`[LifecycleWorker] Auction ${auction.id} transitioned to LIVE`);
 
         if (this.io) {
           this.io.emit('auction:status_changed', {
@@ -55,11 +51,10 @@ export class LifecycleWorker {
           auction.updatedAt = new Date().toISOString();
           db.auctions.set(auction.id, auction);
 
-          // Create an Order for the winner if not already created
           const existingOrder = Array.from(db.orders.values()).find((o) => o.auctionId === auction.id);
           if (!existingOrder) {
             const orderId = `ord-${Date.now()}-${auction.id.substring(4, 10)}`;
-            const newOrder: Order = {
+            const newOrder = {
               id: orderId,
               auctionId: auction.id,
               buyerId: auction.winnerId,
@@ -70,8 +65,7 @@ export class LifecycleWorker {
             };
             db.orders.set(orderId, newOrder);
 
-            // Notify winner
-            const winNotif: Notification = {
+            const winNotif = {
               id: `notif-win-${Date.now()}`,
               userId: auction.winnerId,
               title: 'Victory! You Won the Auction! 🎉',
@@ -88,13 +82,10 @@ export class LifecycleWorker {
             }
           }
         } else {
-          // No bids placed
           auction.status = 'ENDED';
           auction.updatedAt = new Date().toISOString();
           db.auctions.set(auction.id, auction);
         }
-
-        console.log(`[LifecycleWorker] Auction ${auction.id} concluded. Winner: ${auction.winnerName || 'None'}`);
 
         if (this.io) {
           this.io.emit('auction:status_changed', {

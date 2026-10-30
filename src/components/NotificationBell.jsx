@@ -1,21 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bell, Trophy, AlertTriangle, CheckCheck, Tag, X } from 'lucide-react';
-import { Notification } from '../types/index.ts';
-import { api } from '../services/api.ts';
-import { useSocket } from '../context/SocketContext.tsx';
-import { useAuth } from '../context/AuthContext.tsx';
+import { api } from '../services/api.js';
+import { useSocket } from '../context/SocketContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 
-interface NotificationBellProps {
-  onSelectAuction?: (auctionId: string) => void;
-}
-
-export const NotificationBell: React.FC<NotificationBellProps> = ({ onSelectAuction }) => {
+export const NotificationBell = ({ onSelectAuction }) => {
   const { user } = useAuth();
   const { liveNotifications, clearNotification } = useSocket();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
-  const [activeToast, setActiveToast] = useState<Notification | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [activeToast, setActiveToast] = useState(null);
+  const dropdownRef = useRef(null);
 
   const fetchNotifications = async () => {
     if (!user) return;
@@ -31,7 +26,6 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onSelectAuct
     fetchNotifications();
   }, [user]);
 
-  // When live socket notification arrives, update list and trigger floating toast
   useEffect(() => {
     if (liveNotifications.length > 0) {
       const latest = liveNotifications[0];
@@ -45,10 +39,9 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onSelectAuct
     }
   }, [liveNotifications]);
 
-  // Click outside listener
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
       }
     };
@@ -67,7 +60,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onSelectAuct
     }
   };
 
-  const getIcon = (type: string) => {
+  const getIcon = (type) => {
     switch (type) {
       case 'WON':
         return <Trophy className="w-4 h-4 text-emerald-400" />;
@@ -84,7 +77,6 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onSelectAuct
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Bell Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         aria-label="View notifications"
@@ -98,7 +90,6 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onSelectAuct
         )}
       </button>
 
-      {/* Floating Real-time Toast Popover */}
       {activeToast && (
         <div className="fixed bottom-6 right-6 z-50 max-w-sm w-full p-4 rounded-2xl bg-slate-900/95 border border-amber-500/40 shadow-2xl backdrop-blur-md animate-slideUp">
           <div className="flex items-start gap-3">
@@ -117,7 +108,6 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onSelectAuct
         </div>
       )}
 
-      {/* Dropdown Menu */}
       {isOpen && (
         <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl z-50 overflow-hidden animate-fadeIn">
           <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-950/60">
