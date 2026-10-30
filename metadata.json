@@ -1,0 +1,6 @@
+{
+  "name": "BidXchange - Real-Time Bidding & Auction Marketplace",
+  "description": "Bid Live. Compete Smart. Win Fair. Experience high-velocity real-time auctions with instant live bidding, concurrency protection, anti-sniping countdowns, and comprehensive buyer/seller studios.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

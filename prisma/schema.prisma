@@ -1,0 +1,241 @@
+// Prisma Schema for BidXchange – Real-Time Bidding & Auction Marketplace
+// Database: PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  BUYER
+  SELLER
+  ADMIN
+}
+
+enum AuctionStatus {
+  DRAFT
+  SCHEDULED
+  LIVE
+  ENDED
+  PAYMENT_PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash  String
+  name          String
+  role          Role           @default(BUYER)
+  roles         Role[]         @default([BUYER])
+  avatarUrl     String?
+  bio           String?
+  phone         String?
+  walletBalance Float          @default(0.0)
+  isSuspended   Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  // Relations
+  auctionsCreated Auction[]    @relation("SellerAuctions")
+  auctionsWon     Auction[]    @relation("WinnerAuctions")
+  bids            Bid[]
+  watchlistItems  Watchlist[]
+  notifications   Notification[]
+  orders          Order[]
+  auditLogs       AuditLog[]
+  refreshTokens   RefreshToken[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  icon        String?
+  imageUrl    String?
+  createdAt   DateTime  @default(now())
+
+  auctions    Auction[]
+
+  @@index([slug])
+}
+
+model Auction {
+  id              String         @id @default(uuid())
+  title           String
+  description     String
+  startingPrice   Float
+  reservePrice    Float?
+  minIncrement    Float          @default(5.0)
+  currentHighestBid Float        @default(0.0)
+  status          AuctionStatus  @default(SCHEDULED)
+  startTime       DateTime
+  endTime         DateTime
+  originalEndTime DateTime
+  antiSnipingEnabled Boolean     @default(true)
+  extensionCount  Int            @default(0)
+  maxExtensions   Int            @default(10)
+  viewCount       Int            @default(0)
+  bidCount        Int            @default(0)
+
+  // Foreign keys
+  sellerId        String
+  seller          User           @relation("SellerAuctions", fields: [sellerId], references: [id])
+  categoryId      String
+  category        Category       @relation(fields: [categoryId], references: [id])
+  winnerId        String?
+  winner          User?          @relation("WinnerAuctions", fields: [winnerId], references: [id])
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relations
+  images          AuctionImage[]
+  bids            Bid[]
+  watchlistItems  Watchlist[]
+  orders          Order[]
+
+  @@index([status, endTime])
+  @@index([sellerId])
+  @@index([categoryId])
+  @@index([currentHighestBid])
+}
+
+model AuctionImage {
+  id        String   @id @default(uuid())
+  auctionId String
+  auction   Auction  @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  url       String
+  isPrimary Boolean  @default(false)
+  caption   String?
+  createdAt DateTime @default(now())
+
+  @@index([auctionId])
+}
+
+model Bid {
+  id             String   @id @default(uuid())
+  auctionId      String
+  auction        Auction  @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  bidderId       String
+  bidder         User     @relation(fields: [bidderId], references: [id])
+  amount         Float
+  idempotencyKey String?  @unique
+  createdAt      DateTime @default(now())
+
+  @@index([auctionId, amount(sort: Desc)])
+  @@index([bidderId])
+  @@index([createdAt])
+}
+
+model Watchlist {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  auctionId String
+  auction   Auction  @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, auctionId])
+  @@index([userId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   // OUTBID, WON, AUCTION_STARTING, PAYMENT_CONFIRMED, SELLER_BID_RECEIVED
+  auctionId String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+}
+
+model Order {
+  id            String      @id @default(uuid())
+  auctionId     String
+  auction       Auction     @relation(fields: [auctionId], references: [id])
+  buyerId       String
+  buyer         User        @relation(fields: [buyerId], references: [id])
+  totalAmount   Float
+  status        OrderStatus @default(PENDING)
+  shippingAddress String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  payment       Payment?
+
+  @@index([buyerId])
+  @@index([auctionId])
+}
+
+model Payment {
+  id             String        @id @default(uuid())
+  orderId        String        @unique
+  order          Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amount         Float
+  currency       String        @default("USD")
+  status         PaymentStatus @default(PENDING)
+  paymentMethod  String        @default("ESCROW_SIMULATED")
+  transactionRef String        @unique
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([orderId])
+  @@index([transactionRef])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  ipAddress String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([action])
+  @@index([createdAt])
+}
